@@ -1,0 +1,30 @@
+# Dependencias
+node_modules
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+.env.production
+.env.test
+
+# Build / compilado
+dist
+build
+
+# Prisma cliente generado
+generated/
+prisma/generated/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Certificados y llaves
+*.pem
+*.key

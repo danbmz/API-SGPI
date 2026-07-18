@@ -1,0 +1,592 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -------------------- ESQUEMAS / USUARIO
+
+enum RolUsuario {
+  ADMIN
+  SUPERVISOR
+  MOLINO
+  PIGMENTOS
+}
+
+model Usuario {
+  id         BigInt     @id @default(autoincrement())
+
+  nombre     String
+  usuario    String     @unique   // nombre de login, ej. "admin01"
+  password   String                // hash, nunca texto plano
+  role       RolUsuario
+
+  activo     Boolean    @default(true)
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // Relaciones inversas (se irán llenando conforme definamos las demás tablas)
+  auditLogs AuditLog[]
+  ordenesCreadas OrdenProduccion[] @relation("OrdenCreadaPor")
+  avancesComoSupervisor        AvanceTurno[]       @relation("AvanceTurnoSupervisor")
+  sobrantesConfirmados         AvanceTurno[]       @relation("SobranteConfirmadoPor")
+  confirmacionesMolino         AvanceTurno[]       @relation("ConfirmacionMolino")
+  solicitudesMaterialConfirmadas SolicitudMaterial[] @relation("SolicitudMaterialConfirmadoPor")
+  refreshTokens RefreshToken[] @relation("RefreshTokensUsuario")
+
+  @@map("usuarios")
+}
+
+// -------------------- AUDITLOGS
+
+enum ModuloAuditoria {
+  AUTH
+  USUARIOS
+  INVENTARIO
+  ORDENES
+  MOLINO
+  CATALOGOS
+  PIGMENTOS
+}
+
+model AuditLog {
+  id             BigInt   @id @default(autoincrement())
+
+  usuarioId      BigInt
+  usuario        Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  // Snapshot al momento de la acción — no cambia si el usuario se renombra después
+  usuarioLogin   String
+  usuarioNombre  String
+
+  modulo         ModuloAuditoria
+  accion         String
+
+  // Genérico, sin FK real — audit_logs cubre cualquier tabla del sistema
+  entidad        String?
+  entidadId      BigInt?
+
+  detalle        String?
+  ip             String?
+
+  createdAt      DateTime @default(now())
+
+  @@index([usuarioId])
+  @@index([modulo])
+  @@index([entidad, entidadId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+
+// -------------------- CATALOGOS E INVENTARIO / MATERIA PRIMA
+
+enum TipoMaterial {
+  POLIPROPILENO
+  POLIESTIRENO_CRISTAL
+}
+
+enum UnidadMedida {
+  KILOGRAMO
+  GRAMO
+  LITRO
+  MILILITRO
+  PIEZA
+}
+
+model MateriaPrima {
+  id             BigInt       @id @default(autoincrement())
+
+  nombre         String
+  codigoInterno  String       @unique
+  tipo           TipoMaterial
+
+  proveedor      String?
+  unidadMedida   UnidadMedida
+  costoUnitario  Decimal?     @db.Decimal(10,2)
+
+  activo         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  pigmentos          Pigmento[]
+  productos          Producto[]
+  inventarioVirgen  InventarioMateriaPrima?
+  inventarioMolido  InventarioMolido[]
+  ordenesProduccion OrdenProduccion[] @relation("OrdenMateriaPrimaVirgen")
+  moliendas Molienda[]
+  materialPigmentado  CombinacionMaterialPigmentado[]
+
+  @@map("materias_primas")
+}
+
+model InventarioMateriaPrima {
+  id             BigInt       @id @default(autoincrement())
+
+  materiaPrimaId BigInt       @unique
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+
+  cantidadActual Decimal      @db.Decimal(10,3)
+  stockMinimo    Decimal      @db.Decimal(10,3) @default(0)
+
+  updatedAt      DateTime     @updatedAt
+
+  @@map("inventario_materias_primas")
+}
+
+// ---------------------------------- INVENTARIO / MOLIDO
+
+enum OrigenMolido {
+  INTERNO
+  COMPRADO
+}
+
+enum ColorSolido {
+  ROJO
+  AZUL
+  VERDE
+  AMARILLO
+  NARANJA
+  MORADO
+}
+
+model InventarioMolido {
+  id             BigInt       @id @default(autoincrement())
+
+  materiaPrimaId BigInt
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+
+  origen         OrigenMolido
+  color          ColorSolido
+
+  cantidadActual Decimal      @db.Decimal(10,3)
+
+  updatedAt      DateTime     @updatedAt
+
+  ordenesProduccion OrdenProduccion[]
+
+  @@unique([materiaPrimaId, origen, color])
+  @@map("inventario_molido")
+}
+
+// ---------------------------------- CATALOGOS E INVENTARIO / PIGMENTOS
+
+enum CategoriaColorPigmento {
+  SOLIDO
+  SOLIDO_PASTEL
+  NEON_TRASLUCIDO
+  JARRA_NEON_PASTEL
+}
+
+enum TipoPigmento {
+  MASTER
+  POLVO
+}
+
+model Pigmento {
+  id              BigInt                 @id @default(autoincrement())
+
+  color           String
+  categoriaColor  CategoriaColorPigmento
+  tipo            TipoPigmento
+
+  dosisGrPorKg    Decimal                @db.Decimal(10,3)
+
+  materiaPrimaId  BigInt
+  materiaPrima    MateriaPrima           @relation(fields: [materiaPrimaId], references: [id])
+
+  activo          Boolean                @default(true)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  inventarios      InventarioPigmento[]
+  inventarioProducto  InventarioProductoTerminado[]
+  ordenesProduccion OrdenProduccion[]
+  materialPigmentado  CombinacionMaterialPigmentado[]
+
+  @@unique([materiaPrimaId, color, categoriaColor, tipo])
+  @@map("pigmentos")
+}
+
+model InventarioPigmento {
+  id             BigInt   @id @default(autoincrement())
+
+  pigmentoId     BigInt   @unique
+  pigmento       Pigmento @relation(fields: [pigmentoId], references: [id])
+
+  cantidadActual Decimal  @db.Decimal(10,3)
+  stockMinimo    Decimal  @db.Decimal(10,3) @default(0)
+
+  updatedAt      DateTime @updatedAt
+
+  @@map("inventario_pigmentos")
+}
+
+// --------------------------------- INVENTARIO / MATERIA PRIMA PIGMENTADA
+
+model CombinacionMaterialPigmentado {
+  id             BigInt       @id @default(autoincrement())
+
+  materiaPrimaId BigInt
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+
+  pigmentoId     BigInt
+  pigmento       Pigmento     @relation(fields: [pigmentoId], references: [id])
+
+  createdAt      DateTime     @default(now())
+
+  inventario     InventarioMaterialPigmentado?
+
+  @@unique([materiaPrimaId, pigmentoId])
+  @@map("combinaciones_material_pigmentado")
+}
+
+model InventarioMaterialPigmentado {
+  id                BigInt   @id @default(autoincrement())
+
+  combinacionId     BigInt   @unique
+  combinacion       CombinacionMaterialPigmentado @relation(fields: [combinacionId], references: [id])
+
+  cantidadActual    Decimal  @db.Decimal(10,3)
+  updatedAt         DateTime @updatedAt
+
+  @@map("inventario_material_pigmentado")
+}
+
+// ----------------------------------- CATALOGOS E INVENTARIO / PRODUCTOS
+
+model Producto {
+  id             BigInt       @id @default(autoincrement())
+
+  nombre         String
+  codigo         String       @unique
+  tipo           String
+
+  materiaPrimaId BigInt
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+
+  cavidades      Int
+  ciclo          Int          // segundos
+  peso           Decimal      @db.Decimal(10,2) // gramos
+
+  activo         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  inventarios     InventarioProductoTerminado[]
+  ordenesProduccion OrdenProduccion[]
+
+  @@map("productos")
+}
+
+model InventarioProductoTerminado {
+  id             BigInt   @id @default(autoincrement())
+
+  productoId     BigInt
+  producto       Producto @relation(fields: [productoId], references: [id])
+
+  pigmentoId     BigInt
+  pigmento       Pigmento @relation(fields: [pigmentoId], references: [id])
+
+  cantidadActual Decimal  @db.Decimal(10,3)
+
+  updatedAt      DateTime @updatedAt
+
+  @@unique([productoId, pigmentoId])
+  @@map("inventario_producto_terminado")
+}
+
+// ------------------------------------ CATALOGOS DE MAQUINAS
+
+enum TipoProcesoMaquina {
+  INYECCION
+}
+
+enum EstadoMaquina {
+  ACTIVA
+  INACTIVA
+  MANTENIMIENTO
+}
+
+model Maquina {
+  id            BigInt             @id @default(autoincrement())
+
+  nombre        String
+  codigo        String             @unique
+  numero        Int                @unique
+
+  tipoProceso   TipoProcesoMaquina
+  capacidadTon  Decimal            @db.Decimal(10,2)
+  estado        EstadoMaquina
+
+  activo        Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  // relaciones futuras: ordenes_produccion, tiempos_paro
+  ordenesProduccion OrdenProduccion[]
+
+  @@map("maquinas")
+}
+
+// ----------------------------------- CATALOGO DE MOTIVOS DE PARO
+
+model MotivoParo {
+  id        BigInt   @id @default(autoincrement())
+
+  nombre    String   @unique
+
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tiemposParo TiempoParo[]
+
+  @@map("motivos_paro")
+}
+
+// ------------------------------------ ESQUEMA DE ORDENES DE ordenes_produccion
+
+enum EstadoOrdenProduccion {
+  BORRADOR
+  ACTIVA
+  EN_PROGRESO
+  PAUSADA
+  COMPLETADA
+  CANCELADA
+}
+
+enum TipoMaterialOrden {
+  VIRGEN
+  MEZCLA_MOLIDO_INTERNO
+  MEZCLA_RECICLADO
+}
+
+model OrdenProduccion {
+  id       BigInt   @id @default(autoincrement())
+  folio    String   @unique
+  estado   EstadoOrdenProduccion @default(BORRADOR)
+
+  productoId BigInt
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  totalPiezas    Int
+  clienteDestino String?
+  remision       String?
+  observaciones  String?
+
+  tipoMaterial TipoMaterialOrden
+
+  // Material virgen — siempre presente, incluso en mezcla
+  materiaPrimaId BigInt
+  materiaPrima   MateriaPrima @relation("OrdenMateriaPrimaVirgen", fields: [materiaPrimaId], references: [id])
+
+  // Molido — solo aplica si tipoMaterial = MEZCLA_MOLIDO_INTERNO o MEZCLA_RECICLADO
+  // Referencia directa a la fila de InventarioMolido (ya identifica material+origen+color)
+  inventarioMolidoId BigInt?
+  inventarioMolido   InventarioMolido? @relation(fields: [inventarioMolidoId], references: [id])
+
+  porcentajeVirgen Decimal @db.Decimal(5,2) @default(100)
+  porcentajeMolido Decimal @db.Decimal(5,2) @default(0)
+
+  pigmentoId BigInt
+  pigmento   Pigmento @relation(fields: [pigmentoId], references: [id])
+
+  aditivoDescripcion String?
+
+  maquinaId BigInt
+  maquina   Maquina @relation(fields: [maquinaId], references: [id])
+
+  // Snapshots calculados al crear la orden — nunca se recalculan después
+  piezasPorHora        Int
+  piezasPorTurno       Int
+  piezasPorDia         Int
+  tiempoEstimadoHrs    Decimal @db.Decimal(10,2)
+  materiaPrimaTotalKg  Decimal @db.Decimal(10,3)
+  materiaPrimaVirgenKg Decimal @db.Decimal(10,3)
+  materialMolidoKg     Decimal @db.Decimal(10,3) @default(0)
+  pigmentoRequeridoKg  Decimal @db.Decimal(10,3)
+
+  materialSiguienteConfirmado Boolean   @default(false)
+  materialConfirmadoEn        DateTime?
+
+  usuarioCreadorId BigInt
+  usuarioCreador   Usuario @relation("OrdenCreadaPor", fields: [usuarioCreadorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  avancesTurno AvanceTurno[]
+  moliendas MoliendaOrden[]
+
+  @@map("ordenes_produccion")
+}
+
+
+// -------------------------------------- TIEMPO PARO / SOLICITUD MATERIAL Y AVANCES DE TURNO
+
+enum TurnoTrabajo {
+  MANANA
+  TARDE
+  NOCHE
+}
+
+enum EstadoAvanceTurno {
+  ABIERTO
+  CERRADO
+}
+
+model AvanceTurno {
+  id            BigInt   @id @default(autoincrement())
+
+  ordenId       BigInt
+  orden         OrdenProduccion @relation(fields: [ordenId], references: [id])
+
+  supervisorId  BigInt
+  supervisor    Usuario  @relation("AvanceTurnoSupervisor", fields: [supervisorId], references: [id])
+
+  turno         TurnoTrabajo
+  fecha         DateTime @db.Date
+  horaInicio    DateTime
+  horaFin       DateTime?
+
+  estado            EstadoAvanceTurno @default(ABIERTO)
+  borradorGuardado  Boolean           @default(false)
+
+  piezasBuenas       Int     @default(0)
+  piezasDefectuosas  Int     @default(0)
+  kgMerma            Decimal @db.Decimal(10,3) @default(0)
+  kgPlasta           Decimal @db.Decimal(10,3) @default(0)
+  piezasCambioColor  Int     @default(0)
+
+  // Solo se llena si el supervisor reporta sobrante explícitamente en el form.
+  // NULL = no hubo sobrante (implícito, nada que confirmar).
+  kgSobrante              Decimal?  @db.Decimal(10,3)
+  sobranteConfirmado      Boolean   @default(false)
+  sobranteConfirmadoPorId BigInt?
+  sobranteConfirmadoPor   Usuario?  @relation("SobranteConfirmadoPor", fields: [sobranteConfirmadoPorId], references: [id])
+  sobranteConfirmadoEn    DateTime?
+
+  // Confirmación del encargado de molino
+  confirmacionMolinoConfirmado    Boolean?
+  kgMermaRecibida                 Decimal? @db.Decimal(10,3)
+  kgPlastaRecibida                Decimal? @db.Decimal(10,3)
+  piezasMalasRecibidas            Int?
+  piezasCambioColorRecibidas      Int?
+  confirmacionMolinoHayDiferencia Boolean?
+  confirmacionMolinoPorId         BigInt?
+  confirmacionMolinoPor           Usuario? @relation("ConfirmacionMolino", fields: [confirmacionMolinoPorId], references: [id])
+  confirmacionMolinoEn            DateTime?
+
+  observaciones String?
+
+  tiemposParo         TiempoParo[]
+  solicitudesMaterial SolicitudMaterial[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("avances_turno")
+}
+
+model TiempoParo {
+  id             BigInt   @id @default(autoincrement())
+
+  avanceTurnoId  BigInt
+  avanceTurno    AvanceTurno @relation(fields: [avanceTurnoId], references: [id])
+
+  motivoParoId   BigInt
+  motivoParo     MotivoParo  @relation(fields: [motivoParoId], references: [id])
+
+  minutos        Int
+  observaciones  String?
+
+  createdAt      DateTime @default(now())
+
+  @@map("tiempos_paro")
+}
+
+model SolicitudMaterial {
+  id             BigInt   @id @default(autoincrement())
+
+  avanceTurnoId  BigInt
+  avanceTurno    AvanceTurno @relation(fields: [avanceTurnoId], references: [id])
+
+  kgSolicitados  Decimal  @db.Decimal(10,3)
+  motivo         String
+
+  confirmado     Boolean  @default(false)
+  confirmadoPorId  BigInt?
+  confirmadoPor    Usuario?  @relation("SolicitudMaterialConfirmadoPor", fields: [confirmadoPorId], references: [id])
+  confirmadoEn   DateTime?
+
+  createdAt      DateTime @default(now())
+
+  @@map("solicitudes_material")
+}
+
+// ----------------------------------- MOLIENDAS
+
+model Molienda {
+  id              BigInt      @id @default(autoincrement())
+
+  materiaPrimaId  BigInt
+  materiaPrima    MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+
+  colorAproximado ColorSolido
+  kgIngresados    Decimal     @db.Decimal(10,3)
+  fecha           DateTime
+
+  observaciones   String?
+
+  ordenes         MoliendaOrden[]
+
+  createdAt       DateTime    @default(now())
+
+  @@map("moliendas")
+}
+
+model MoliendaOrden {
+  id          BigInt   @id @default(autoincrement())
+
+  moliendaId  BigInt
+  molienda    Molienda        @relation(fields: [moliendaId], references: [id])
+
+  ordenId     BigInt
+  orden       OrdenProduccion @relation(fields: [ordenId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@unique([moliendaId, ordenId])
+  @@map("moliendas_ordenes")
+}
+
+// ------------------------------------ REFRESH TOKEN
+
+model RefreshToken {
+  id         BigInt   @id @default(autoincrement())
+
+  usuarioId  BigInt
+  usuario    Usuario  @relation("RefreshTokensUsuario", fields: [usuarioId], references: [id])
+
+  tokenHash  String   @unique   // nunca se guarda el token en texto plano, solo su hash
+  expiraEn   DateTime
+  revocado   Boolean  @default(false)
+
+  userAgent  String?            // útil para que el usuario vea "sesiones activas" en el futuro
+  ip         String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([usuarioId])
+  @@map("refresh_tokens")
+}
