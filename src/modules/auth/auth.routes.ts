@@ -11,11 +11,12 @@ import { loginBodySchema, loginResponseSchema, errorResponseSchema, okResponseSc
 
 const REFRESH_COOKIE_NAME = "refreshToken";
 const ACCESS_COOKIE_NAME = "accessToken";
+const esProduccion = process.env.NODE_ENV === "production";
 
 const COOKIE_OPTIONS_BASE = {
   httpOnly: true,
-  secure: true,
-  sameSite: "none" as const,
+  secure: esProduccion,       // true en producción (HTTPS), false en desarrollo local (HTTP)
+  sameSite: esProduccion ? ("none" as const) : ("lax" as const),
   path: "/",
 };
 
@@ -138,4 +139,16 @@ export default async function authRoutes(app: FastifyInstance<any, any, any, any
 
         return reply.send({ ok: true });
   });
+
+  app.get(
+    "/auth/me",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const { id, role } = request.authUser!;
+      return reply.send({
+        id: id.toString(), // BigInt no serializa directo, recuerda convertir a string
+        role,
+      });
+    }
+  );
 }

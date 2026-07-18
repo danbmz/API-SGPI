@@ -12,4 +12,5 @@ export const env = {
   COOKIE_SECRET: requireEnv("COOKIE_SECRET"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PORT: Number(process.env.PORT ?? 3000),
+  NODE_ENV: process.env.NODE_ENV ?? "development",
 };

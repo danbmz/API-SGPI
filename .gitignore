@@ -28,3 +28,5 @@ npm-debug.log*
 # Certificados y llaves
 *.pem
 *.key
+
+cookies*.txt

@@ -1,0 +1,59 @@
+@baseUrl = http://localhost:3000
+
+### Login (necesario primero para obtener las cookies)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Login como supervisor (usuario sin permisos de admin)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Listar usuarios
+GET {{baseUrl}}/usuarios
+
+### Crear usuario
+POST {{baseUrl}}/usuarios
+Content-Type: application/json
+
+{
+  "nombre": "Ana Gonzales",
+  "usuario": "molino01",
+  "password": "password123",
+  "role": "MOLINO"
+}
+
+### Editar usuario (reemplaza el 2 por el id real que te regresó el create)
+PATCH {{baseUrl}}/usuarios/4
+Content-Type: application/json
+
+{
+  "nombre": "Ana Gonzales Actualizado",
+  "role": "SUPERVISOR"
+}
+
+### Cambiar contraseña
+PATCH {{baseUrl}}/usuarios/3/password
+Content-Type: application/json
+
+{
+  "password": "nuevaPassword456"
+}
+
+### Desactivar usuario
+DELETE {{baseUrl}}/usuarios/3
+
+### Reactivar al supervisor (reemplaza el 2 por el id real)
+PATCH {{baseUrl}}/usuarios/2/reactivar
+
+### Logout (para dejar la sesión limpia antes de la siguiente prueba)
+POST {{baseUrl}}/auth/logout
