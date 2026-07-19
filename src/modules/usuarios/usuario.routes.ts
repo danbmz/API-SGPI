@@ -46,7 +46,7 @@ export default async function usuarioRoutes(
     },
     async (request, reply) => {
       try {
-        const usuario = await crearUsuario(request.body);
+        const usuario = await crearUsuario(request.body, request.authUser!, request.ip);
         return reply.code(201).send(usuario);
       } catch (err) {
         if (err instanceof Error && err.message === "USUARIO_YA_EXISTE") {
@@ -69,7 +69,7 @@ export default async function usuarioRoutes(
     },
     async (request, reply) => {
       try {
-        const usuario = await editarUsuario(BigInt(request.params.id), request.body);
+        const usuario = await editarUsuario(BigInt(request.params.id), request.body, request.authUser!, request.ip);
         return reply.send(usuario);
       } catch (err) {
         if (err instanceof Error && err.message === "USUARIO_NO_ENCONTRADO") {
@@ -86,16 +86,19 @@ export default async function usuarioRoutes(
     {
       schema: {
         params: usuarioParamsSchema,
-        response: { 200: okResponseSchema, 404: errorResponseSchema },
+        response: { 200: okResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema},
       },
     },
     async (request, reply) => {
       try {
-        await desactivarUsuario(BigInt(request.params.id));
+        await desactivarUsuario(BigInt(request.params.id), request.authUser!, request.ip);
         return reply.send({ ok: true });
       } catch (err) {
         if (err instanceof Error && err.message === "USUARIO_NO_ENCONTRADO") {
           return reply.code(404).send({ error: "Usuario no encontrado" });
+        }
+        if (err instanceof Error && err.message === "USUARIO_YA_INACTIVO") {
+          return reply.code(409).send({ error: "El usuario ya está desactivado" });
         }
         throw err;
       }
@@ -108,16 +111,19 @@ export default async function usuarioRoutes(
     {
       schema: {
         params: usuarioParamsSchema,
-        response: { 200: okResponseSchema, 404: errorResponseSchema },
+        response: { 200: okResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema },
       },
     },
     async (request, reply) => {
       try {
-        await reactivarUsuario(BigInt(request.params.id));
+        await reactivarUsuario(BigInt(request.params.id), request.authUser!, request.ip);
         return reply.send({ ok: true });
       } catch (err) {
         if (err instanceof Error && err.message === "USUARIO_NO_ENCONTRADO") {
           return reply.code(404).send({ error: "Usuario no encontrado" });
+        }
+        if (err instanceof Error && err.message === "USUARIO_YA_ACTIVO") {
+          return reply.code(409).send({error: "El usuario ya está activo"})
         }
         throw err;
       }
@@ -136,7 +142,7 @@ export default async function usuarioRoutes(
     },
     async (request, reply) => {
       try {
-        await cambiarPassword(BigInt(request.params.id), request.body.password);
+        await cambiarPassword(BigInt(request.params.id), request.body.password, request.authUser!, request.ip);
         return reply.send({ ok: true });
       } catch (err) {
         if (err instanceof Error && err.message === "USUARIO_NO_ENCONTRADO") {

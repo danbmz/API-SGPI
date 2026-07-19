@@ -26,10 +26,10 @@ POST {{baseUrl}}/usuarios
 Content-Type: application/json
 
 {
-  "nombre": "Ana Gonzales",
-  "usuario": "molino01",
+  "nombre": "Jorge Moran",
+  "usuario": "pigmento01",
   "password": "password123",
-  "role": "MOLINO"
+  "role": "PIGMENTOS"
 }
 
 ### Editar usuario (reemplaza el 2 por el id real que te regresó el create)
@@ -37,7 +37,7 @@ PATCH {{baseUrl}}/usuarios/4
 Content-Type: application/json
 
 {
-  "nombre": "Ana Gonzales Actualizado",
+  "nombre": "Jorge Moran Actualizado",
   "role": "SUPERVISOR"
 }
 

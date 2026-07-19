@@ -1,8 +1,11 @@
 import "fastify";
+import type { RolUsuario } from "../../prisma/generated/prisma/client/enums.ts";
 
 export interface AuthUser {
   id: bigint;
-  role: "ADMIN" | "SUPERVISOR" | "MOLINO" | "PIGMENTOS";
+  usuario: string;
+  nombre: string;
+  role: RolUsuario
 }
 
 declare module "fastify" {

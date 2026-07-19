@@ -1,6 +1,10 @@
 import argon2 from "argon2";
 import { prisma } from "../../lib/prisma.js";
-import type { CrearUsuarioBody, EditarUsuarioBody, RolUsuario } from "./usuario.schema.js";
+import type { CrearUsuarioBody, EditarUsuarioBody } from "./usuario.schema.js";
+import type { RolUsuario } from "../../../prisma/generated/prisma/client/enums.js";
+import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
+import type { AuthUser } from "../../types/fastify.js";
+import { compararCambios } from "../../utils/comparar-cambios.js";
 
 function serializarUsuario(usuario: {
   id: bigint;
@@ -27,7 +31,7 @@ export async function listarUsuarios() {
   return usuarios.map(serializarUsuario);
 }
 
-export async function crearUsuario(data: CrearUsuarioBody) {
+export async function crearUsuario(data: CrearUsuarioBody, actor: AuthUser, ip?: string) {
   const existente = await prisma.usuario.findUnique({
     where: { usuario: data.usuario },
   });
@@ -47,15 +51,29 @@ export async function crearUsuario(data: CrearUsuarioBody) {
     },
   });
 
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "USUARIOS",
+    accion: "crear",
+    entidad: "usuario",
+    entidadId: nuevoUsuario.id,
+    ...(ip !== undefined && { ip }),
+  });
+
   return serializarUsuario(nuevoUsuario);
 }
 
-export async function editarUsuario(id: bigint, data: EditarUsuarioBody) {
+export async function editarUsuario(id: bigint, data: EditarUsuarioBody, actor: AuthUser, ip?: string) {
   const usuario = await prisma.usuario.findUnique({ where: { id } });
+  if (!usuario) throw new Error("USUARIO_NO_ENCONTRADO");
 
-  if (!usuario) {
-    throw new Error("USUARIO_NO_ENCONTRADO");
-  }
+  const detalle = compararCambios(
+    usuario,
+    data,
+    { nombre: "nombre", role: "rol" } // etiquetas legibles para el mensaje
+  );
 
   const actualizado = await prisma.usuario.update({
     where: { id },
@@ -65,36 +83,78 @@ export async function editarUsuario(id: bigint, data: EditarUsuarioBody) {
     },
   });
 
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "USUARIOS",
+    accion: "editar",
+    entidad: "usuario",
+    entidadId: id,
+    ...(detalle !== "" && { detalle }),
+    ...(ip !== undefined && { ip }),
+  });
+
   return serializarUsuario(actualizado);
 }
 
-export async function desactivarUsuario(id: bigint) {
+export async function desactivarUsuario(id: bigint, actor: AuthUser, ip?: string) {
   const usuario = await prisma.usuario.findUnique({ where: { id } });
 
   if (!usuario) {
     throw new Error("USUARIO_NO_ENCONTRADO");
   }
 
-  await prisma.usuario.update({
+  if (!usuario.activo) {
+    throw new Error("USUARIO_YA_INACTIVO");
+  }
+
+  const desactivado = await prisma.usuario.update({
     where: { id },
     data: { activo: false },
   });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "USUARIOS",
+    accion: "desactivar",
+    entidad: "usuario",
+    entidadId: desactivado.id,
+    ...(ip !== undefined && { ip }),
+  });
 }
 
-export async function reactivarUsuario(id: bigint) {
+export async function reactivarUsuario(id: bigint, actor: AuthUser, ip?: string) {
   const usuario = await prisma.usuario.findUnique({ where: { id } });
 
   if (!usuario) {
     throw new Error("USUARIO_NO_ENCONTRADO");
   }
 
-  await prisma.usuario.update({
+  if (usuario.activo) {
+    throw new Error("USUARIO_YA_ACTIVO");
+  }
+
+  const reactivado = await prisma.usuario.update({
     where: { id },
     data: { activo: true },
   });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "USUARIOS",
+    accion: "reactivar",
+    entidad: "usuario",
+    entidadId: reactivado.id,
+    ...(ip !== undefined && { ip }),
+  });
 }
 
-export async function cambiarPassword(id: bigint, nuevaPassword: string) {
+export async function cambiarPassword(id: bigint, nuevaPassword: string, actor: AuthUser, ip?: string) {
   const usuario = await prisma.usuario.findUnique({ where: { id } });
 
   if (!usuario) {
@@ -106,5 +166,16 @@ export async function cambiarPassword(id: bigint, nuevaPassword: string) {
   await prisma.usuario.update({
     where: { id },
     data: { password: passwordHash },
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "USUARIOS",
+    accion: "cambiar_password",
+    entidad: "usuario",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
   });
 }

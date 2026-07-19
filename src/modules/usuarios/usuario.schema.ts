@@ -7,7 +7,7 @@ const rolUsuarioSchema = Type.Union([
   Type.Literal("PIGMENTOS"),
 ]);
 
-export type RolUsuario = Static<typeof rolUsuarioSchema>; // ← nueva línea
+// export type RolUsuario = Static<typeof rolUsuarioSchema>; // ← nueva línea
 
 // ---------- Crear usuario ----------
 
