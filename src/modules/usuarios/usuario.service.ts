@@ -99,6 +99,10 @@ export async function editarUsuario(id: bigint, data: EditarUsuarioBody, actor: 
 }
 
 export async function desactivarUsuario(id: bigint, actor: AuthUser, ip?: string) {
+  if (id === actor.id) {
+    throw new Error("NO_PUEDES_DESACTIVARTE_A_TI_MISMO");
+  }
+  
   const usuario = await prisma.usuario.findUnique({ where: { id } });
 
   if (!usuario) {
@@ -107,6 +111,15 @@ export async function desactivarUsuario(id: bigint, actor: AuthUser, ip?: string
 
   if (!usuario.activo) {
     throw new Error("USUARIO_YA_INACTIVO");
+  }
+
+  if (usuario.role === "ADMIN") {
+    const adminsActivos = await prisma.usuario.count({
+      where: { role: "ADMIN", activo: true },
+    });
+    if (adminsActivos <= 1) {
+      throw new Error("NO_PUEDE_QUEDAR_SIN_ADMIN_ACTIVO");
+    }
   }
 
   const desactivado = await prisma.usuario.update({

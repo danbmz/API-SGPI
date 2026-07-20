@@ -8,6 +8,7 @@ import {
   revocarRefreshToken,
 } from "./auth.service.js";
 import { loginBodySchema, loginResponseSchema, errorResponseSchema, okResponseSchema } from "./auth.schema.js";
+import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 
 const REFRESH_COOKIE_NAME = "refreshToken";
 const ACCESS_COOKIE_NAME = "accessToken";
@@ -52,6 +53,15 @@ export default async function authRoutes(app: FastifyInstance<any, any, any, any
       const accessToken = generarAccessToken(app, usuarioEncontrado);
       const { token: refreshToken, expiraEn } = await generarRefreshToken(usuarioEncontrado.id, {
         userAgent: request.headers["user-agent"],
+        ip: request.ip,
+      });
+
+      await registrarAccion({
+        usuarioId: usuarioEncontrado.id,
+        usuarioLogin: usuarioEncontrado.usuario,
+        usuarioNombre: usuarioEncontrado.nombre,
+        modulo: "AUTH",
+        accion: "login",
         ip: request.ip,
       });
 
@@ -131,7 +141,18 @@ export default async function authRoutes(app: FastifyInstance<any, any, any, any
         const tokenActual = request.cookies[REFRESH_COOKIE_NAME];
 
         if (tokenActual) {
-            await revocarRefreshToken(tokenActual);
+          const usuario = await revocarRefreshToken(tokenActual);
+
+          if (usuario) {
+            await registrarAccion({
+              usuarioId: usuario.id,
+              usuarioLogin: usuario.usuario,
+              usuarioNombre: usuario.nombre,
+              modulo: "AUTH",
+              accion: "logout",
+              ip: request.ip,
+            });
+          }
         }
 
         reply.clearCookie(ACCESS_COOKIE_NAME, { path: "/" });

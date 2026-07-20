@@ -108,8 +108,19 @@ export async function rotarRefreshToken(
 export async function revocarRefreshToken(tokenPlano: string) {
   const tokenHash = hashToken(tokenPlano);
 
-  await prisma.refreshToken.updateMany({
-    where: { tokenHash, revocado: false },
+  const registro = await prisma.refreshToken.findUnique({
+    where: { tokenHash },
+    include: { usuario: true },
+  });
+
+  if (!registro || registro.revocado) {
+    return null;
+  }
+
+  await prisma.refreshToken.update({
+    where: { id: registro.id },
     data: { revocado: true },
   });
+
+  return registro.usuario;
 }

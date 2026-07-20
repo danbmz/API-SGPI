@@ -26,18 +26,18 @@ POST {{baseUrl}}/usuarios
 Content-Type: application/json
 
 {
-  "nombre": "Jorge Moran",
-  "usuario": "pigmento01",
+  "nombre": "Mario Rosas",
+  "usuario": "admin02",
   "password": "password123",
-  "role": "PIGMENTOS"
+  "role": "ADMIN"
 }
 
 ### Editar usuario (reemplaza el 2 por el id real que te regresó el create)
-PATCH {{baseUrl}}/usuarios/4
+PATCH {{baseUrl}}/usuarios/8
 Content-Type: application/json
 
 {
-  "nombre": "Jorge Moran Actualizado",
+  "nombre": "Jorge Moran Perez",
   "role": "SUPERVISOR"
 }
 
@@ -50,7 +50,7 @@ Content-Type: application/json
 }
 
 ### Desactivar usuario
-DELETE {{baseUrl}}/usuarios/3
+DELETE {{baseUrl}}/usuarios/5
 
 ### Reactivar al supervisor (reemplaza el 2 por el id real)
 PATCH {{baseUrl}}/usuarios/2/reactivar
