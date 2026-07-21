@@ -1,0 +1,120 @@
+### materias-primas.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin (necesario antes de las pruebas)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar materias primas (cualquier usuario autenticado)
+GET {{baseUrl}}/materias-primas
+
+### Crear materia prima — Polipropileno Virgen
+POST {{baseUrl}}/materias-primas
+Content-Type: application/json
+
+{
+  "nombre": "Polipropileno Virgen",
+  "codigoInterno": "JU-PVL1",
+  "tipo": "POLIPROPILENO",
+  "proveedor": "Braskem",
+  "unidadMedida": "KILOGRAMO",
+  "costoUnitario": 30,
+  "stockMinimo": 500
+}
+
+### Crear materia prima — Poliestireno-Cristal Virgen
+POST {{baseUrl}}/materias-primas
+Content-Type: application/json
+
+{
+  "nombre": "Poliestireno-Cristal Virgen",
+  "codigoInterno": "JU-PSC1",
+  "tipo": "POLIESTIRENO_CRISTAL",
+  "proveedor": "INEOS",
+  "unidadMedida": "KILOGRAMO",
+  "costoUnitario": 30,
+  "stockMinimo": 500
+}
+
+### Intentar crear con el mismo código interno — debe fallar con 409
+POST {{baseUrl}}/materias-primas
+Content-Type: application/json
+
+{
+  "nombre": "Duplicado de prueba",
+  "codigoInterno": "JU-PVL1",
+  "tipo": "POLIPROPILENO",
+  "unidadMedida": "KILOGRAMO",
+  "stockMinimo": 0
+}
+
+### Editar materia prima (reemplaza el 1 por el id real que regresó el create)
+PATCH {{baseUrl}}/materias-primas/1
+Content-Type: application/json
+
+{
+  "nombre": "Polipropileno Virgen Actualizado",
+  "costoUnitario": 32
+}
+
+### Desactivar materia prima
+DELETE {{baseUrl}}/materias-primas/1
+
+### Intentar desactivarla de nuevo — debe fallar con 409
+DELETE {{baseUrl}}/materias-primas/1
+
+### Reactivar materia prima
+PATCH {{baseUrl}}/materias-primas/1/reactivar
+
+### Intentar reactivarla de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/materias-primas/1/reactivar
+
+### Editar con un id que no existe — debe fallar con 404
+PATCH {{baseUrl}}/materias-primas/9999
+Content-Type: application/json
+
+{
+  "nombre": "No debería existir"
+}
+
+### Logout (para dejar la sesión limpia antes de la siguiente prueba)
+POST {{baseUrl}}/auth/logout
+
+### Prueba de rol: login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar (debe dar 200)
+GET {{baseUrl}}/materias-primas
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/materias-primas
+Content-Type: application/json
+
+{
+  "nombre": "Intento no autorizado",
+  "codigoInterno": "TEST-999",
+  "tipo": "POLIPROPILENO",
+  "unidadMedida": "KILOGRAMO",
+  "stockMinimo": 0
+}
+
+### Volver a loguear como admin para seguir trabajando
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

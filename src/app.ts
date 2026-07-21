@@ -7,6 +7,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import authenticatePlugin from "./plugins/authenticate.js";
 import usuarioRoutes from "./modules/usuarios/usuario.routes.js";
 import errorHandlerPlugin from "./plugins/error-handler.js";
+import materiaPrimaRoutes from "./modules/materias-primas/materiaPrima.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -19,6 +20,7 @@ export function buildApp() {
   app.register(authenticatePlugin);
   app.register(authRoutes);
   app.register(usuarioRoutes);
+  app.register(materiaPrimaRoutes)
 
   return app;
 }
