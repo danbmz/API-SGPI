@@ -208,7 +208,7 @@ model Pigmento {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  inventarios      InventarioPigmento[]
+  inventario      InventarioPigmento?
   inventarioProducto  InventarioProductoTerminado[]
   ordenesProduccion OrdenProduccion[]
   materialPigmentado  CombinacionMaterialPigmentado[]

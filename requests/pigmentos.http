@@ -1,0 +1,130 @@
+### pigmentos.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar pigmentos (cualquier usuario autenticado) — debería venir vacío al inicio
+GET {{baseUrl}}/pigmentos
+
+### Crear pigmento — Amarillo Sólido Master, para Polipropileno
+### (reemplaza materiaPrimaId por el id real del Polipropileno Virgen que ya creaste)
+POST {{baseUrl}}/pigmentos
+Content-Type: application/json
+
+{
+  "color": "Amarillo",
+  "categoriaColor": "SOLIDO",
+  "tipo": "MASTER",
+  "dosisGrPorKg": 21,
+  "materiaPrimaId": "1",
+  "stockMinimo": 5
+}
+
+### Crear pigmento — Rojo Sólido Master, para Polipropileno
+POST {{baseUrl}}/pigmentos
+Content-Type: application/json
+
+{
+  "color": "Rojo",
+  "categoriaColor": "SOLIDO",
+  "tipo": "MASTER",
+  "dosisGrPorKg": 8,
+  "materiaPrimaId": "1",
+  "stockMinimo": 5
+}
+
+### Intentar crear el mismo pigmento otra vez (mismo material+color+categoría+tipo) — debe fallar con 409
+POST {{baseUrl}}/pigmentos
+Content-Type: application/json
+
+{
+  "color": "Amarillo",
+  "categoriaColor": "SOLIDO",
+  "tipo": "MASTER",
+  "dosisGrPorKg": 21,
+  "materiaPrimaId": "1",
+  "stockMinimo": 0
+}
+
+### Crear pigmento con materia prima inexistente — debe fallar con 404
+POST {{baseUrl}}/pigmentos
+Content-Type: application/json
+
+{
+  "color": "Azul",
+  "categoriaColor": "SOLIDO",
+  "tipo": "MASTER",
+  "dosisGrPorKg": 21,
+  "materiaPrimaId": "9999",
+  "stockMinimo": 0
+}
+
+### Editar pigmento (reemplaza el 1 por el id real del Amarillo creado arriba)
+PATCH {{baseUrl}}/pigmentos/1
+Content-Type: application/json
+
+{
+  "dosisGrPorKg": 22
+}
+
+### Desactivar pigmento
+DELETE {{baseUrl}}/pigmentos/1
+
+### Intentar desactivarlo de nuevo — debe fallar con 409
+DELETE {{baseUrl}}/pigmentos/1
+
+### Reactivar pigmento
+PATCH {{baseUrl}}/pigmentos/1/reactivar
+
+### Intentar reactivarlo de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/pigmentos/1/reactivar
+
+### Editar con id inexistente — debe fallar con 404
+PATCH {{baseUrl}}/pigmentos/9999
+Content-Type: application/json
+
+{
+  "color": "No debería existir"
+}
+
+### Prueba de rol: login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar (debe dar 200)
+GET {{baseUrl}}/pigmentos
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/pigmentos
+Content-Type: application/json
+
+{
+  "color": "Verde",
+  "categoriaColor": "SOLIDO",
+  "tipo": "MASTER",
+  "dosisGrPorKg": 22,
+  "materiaPrimaId": "1",
+  "stockMinimo": 0
+}
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
