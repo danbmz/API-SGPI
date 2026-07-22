@@ -1,0 +1,122 @@
+### productos.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar productos (cualquier usuario autenticado) — debería venir vacío al inicio
+GET {{baseUrl}}/productos
+
+### Crear producto — Jarra 2L
+### (reemplaza materiaPrimaId por el id real del Polipropileno Virgen)
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Jarra 2L",
+  "codigo": "7501000001",
+  "tipo": "Jarra",
+  "materiaPrimaId": "1",
+  "cavidades": 2,
+  "ciclo": 28,
+  "peso": 185
+}
+
+### Intentar crear con el mismo código — debe fallar con 409
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Duplicado de prueba",
+  "codigo": "7501000001",
+  "tipo": "Jarra",
+  "materiaPrimaId": "1",
+  "cavidades": 1,
+  "ciclo": 20,
+  "peso": 100
+}
+
+### Crear con materia prima inexistente — debe fallar con 404
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Producto fantasma",
+  "codigo": "TEST-999",
+  "tipo": "Vaso",
+  "materiaPrimaId": "9999",
+  "cavidades": 1,
+  "ciclo": 20,
+  "peso": 50
+}
+
+### Editar producto (reemplaza el 1 por el id real de la Jarra creada arriba)
+PATCH {{baseUrl}}/productos/1
+Content-Type: application/json
+
+{
+  "peso": 190,
+  "ciclo": 30
+}
+
+### Desactivar producto
+DELETE {{baseUrl}}/productos/1
+
+### Intentar desactivarlo de nuevo — debe fallar con 409
+DELETE {{baseUrl}}/productos/1
+
+### Reactivar producto
+PATCH {{baseUrl}}/productos/1/reactivar
+
+### Intentar reactivarlo de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/productos/1/reactivar
+
+### Editar con id inexistente — debe fallar con 404
+PATCH {{baseUrl}}/productos/9999
+Content-Type: application/json
+
+{
+  "nombre": "No debería existir"
+}
+
+### Prueba de rol: login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar (debe dar 200)
+GET {{baseUrl}}/productos
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Intento no autorizado",
+  "codigo": "TEST-403",
+  "tipo": "Vaso",
+  "materiaPrimaId": "1",
+  "cavidades": 1,
+  "ciclo": 20,
+  "peso": 50
+}
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

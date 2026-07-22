@@ -9,6 +9,7 @@ import usuarioRoutes from "./modules/usuarios/usuario.routes.js";
 import errorHandlerPlugin from "./plugins/error-handler.js";
 import materiaPrimaRoutes from "./modules/materias-primas/materiaPrima.routes.js";
 import pigmentoRoutes from "./modules/pigmentos/pigmento.routes.js";
+import productoRoutes from "./modules/productos/producto.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -23,6 +24,7 @@ export function buildApp() {
   app.register(usuarioRoutes);
   app.register(materiaPrimaRoutes)
   app.register(pigmentoRoutes)
+  app.register(productoRoutes)
 
   return app;
 }

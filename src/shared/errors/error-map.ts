@@ -8,16 +8,20 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   NO_PUEDES_DESACTIVARTE_A_TI_MISMO: { code: 409, message: "No puedes desactivar tu propia cuenta" },
   NO_PUEDE_QUEDAR_SIN_ADMIN_ACTIVO: { code: 409, message: "Debe existir al menos un administrador activo" },
   //   ERRORES MATERIA PRIMA
-  MATERIA_PRIMA_YA_EXISTE : { code: 409, message: "Materia prima ya registrada"},
   MATERIA_PRIMA_NO_ENCONTRADA: { code: 404, message: "Materia prima no encontrada"},
+  MATERIA_PRIMA_YA_EXISTE : { code: 409, message: "Materia prima ya registrada"},
   MATERIA_PRIMA_YA_INACTIVA: { code: 409, message: "La materia prima ya está desactivada" },
   MATERIA_PRIMA_YA_ACTIVA: { code: 409, message: "La materia prima ya está activa"},
   // ERRORES PIGMENTOS
   PIGMENTO_NO_ENCONTRADO: { code: 404, message: "Pigmento no encontrado"},
   PIGMENTO_YA_EXISTE: { code: 409, message: "El pigmento ya existe"},
   PIGMENTO_YA_INACTIVO: { code: 409, message: "El pigmento ya está desactivado"},
-  PIGMENTO_YA_ACTIVO:{code: 409, message: "El pigmento ya está activo"}
-
+  PIGMENTO_YA_ACTIVO:{code: 409, message: "El pigmento ya está activo"},
+  // ERRORES PRODUCTOS
+  PRODUCTO_NO_ENCONTRADO: {code: 404, message: "Producto no encontrada"}, 
+  PRODUCTO_YA_EXISTE: { code: 409, message: "Producto ya registrado"},
+  PRODUCTO_YA_INACTIVO: {code: 409, message: "El producto ya está desactivado"}, 
+  PRODUCTO_YA_ACTIVO: {code: 409, message: "El producto ya está activo"},
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {
