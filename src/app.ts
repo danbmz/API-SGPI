@@ -11,6 +11,7 @@ import materiaPrimaRoutes from "./modules/materias-primas/materiaPrima.routes.js
 import pigmentoRoutes from "./modules/pigmentos/pigmento.routes.js";
 import productoRoutes from "./modules/productos/producto.routes.js";
 import maquinaRoutes from "./modules/maquinas/maquina.routes.js";
+import motivoParoRoutes from "./modules/motivos-paro/motivoParo.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -27,6 +28,7 @@ export function buildApp() {
   app.register(pigmentoRoutes)
   app.register(productoRoutes)
   app.register(maquinaRoutes)
+  app.register(motivoParoRoutes)
 
   return app;
 }

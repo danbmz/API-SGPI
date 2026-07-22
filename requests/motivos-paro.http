@@ -1,0 +1,96 @@
+### motivos-paro.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar motivos de paro — debería venir vacío al inicio
+GET {{baseUrl}}/motivos-paro
+
+### Crear motivo — Cambio de color
+POST {{baseUrl}}/motivos-paro
+Content-Type: application/json
+
+{
+  "nombre": "Cambio de color"
+}
+
+### Crear motivo — Falla de máquina
+POST {{baseUrl}}/motivos-paro
+Content-Type: application/json
+
+{
+  "nombre": "Falla de máquina"
+}
+
+### Intentar crear con el mismo nombre — debe fallar con 409
+POST {{baseUrl}}/motivos-paro
+Content-Type: application/json
+
+{
+  "nombre": "Cambio de color"
+}
+
+### Editar motivo (reemplaza el 1 por el id real que regresó el create)
+PATCH {{baseUrl}}/motivos-paro/1
+Content-Type: application/json
+
+{
+  "nombre": "Cambio de color de pigmento"
+}
+
+### Desactivar motivo
+DELETE {{baseUrl}}/motivos-paro/1
+
+### Intentar desactivarlo de nuevo — debe fallar con 409
+DELETE {{baseUrl}}/motivos-paro/1
+
+### Reactivar motivo
+PATCH {{baseUrl}}/motivos-paro/1/reactivar
+
+### Intentar reactivarlo de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/motivos-paro/1/reactivar
+
+### Editar con id inexistente — debe fallar con 404
+PATCH {{baseUrl}}/motivos-paro/9999
+Content-Type: application/json
+
+{
+  "nombre": "No debería existir"
+}
+
+### Prueba de rol: login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar (debe dar 200)
+GET {{baseUrl}}/motivos-paro
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/motivos-paro
+Content-Type: application/json
+
+{
+  "nombre": "Intento no autorizado"
+}
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
