@@ -326,9 +326,8 @@ model Maquina {
 
   tipoProceso   TipoProcesoMaquina
   capacidadTon  Decimal            @db.Decimal(10,2)
-  estado        EstadoMaquina
+  estado        EstadoMaquina      @default(ACTIVA)
 
-  activo        Boolean            @default(true)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

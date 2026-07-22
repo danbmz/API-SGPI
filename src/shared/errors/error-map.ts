@@ -22,6 +22,12 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   PRODUCTO_YA_EXISTE: { code: 409, message: "Producto ya registrado"},
   PRODUCTO_YA_INACTIVO: {code: 409, message: "El producto ya está desactivado"}, 
   PRODUCTO_YA_ACTIVO: {code: 409, message: "El producto ya está activo"},
+  // ERRORES MAQUINAS
+  MAQUINA_NO_ENCONTRADA: {code: 404, message: "Maquina no encontrada"},
+  MAQUINA_YA_EXISTE: {code: 409, message: "Maquina ya registrada"},
+  MAQUINA_NUMERO_YA_EXISTE: {code: 409, message: "Ya existe una maquina con el mismo número"}, 
+  MAQUINA_YA_EN_ESE_ESTADO: {code: 409, message: "La maquina ya está en ese estado"},
+
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

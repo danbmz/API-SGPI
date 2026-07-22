@@ -1,0 +1,132 @@
+### maquinas.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar máquinas — debería venir vacío al inicio
+GET {{baseUrl}}/maquinas
+
+### Crear máquina — TX 268T
+POST {{baseUrl}}/maquinas
+Content-Type: application/json
+
+{
+  "nombre": "TX 268T",
+  "codigo": "TX268T",
+  "numero": 1,
+  "tipoProceso": "INYECCION",
+  "capacidadTon": 268
+}
+
+### Intentar crear con el mismo código — debe fallar con 409
+POST {{baseUrl}}/maquinas
+Content-Type: application/json
+
+{
+  "nombre": "Duplicado de prueba",
+  "codigo": "TX268T",
+  "numero": 2,
+  "tipoProceso": "INYECCION",
+  "capacidadTon": 200
+}
+
+### Intentar crear con el mismo número — debe fallar con 409
+POST {{baseUrl}}/maquinas
+Content-Type: application/json
+
+{
+  "nombre": "Otra máquina",
+  "codigo": "TX999X",
+  "numero": 1,
+  "tipoProceso": "INYECCION",
+  "capacidadTon": 200
+}
+
+### Editar máquina (reemplaza el 1 por el id real que regresó el create)
+PATCH {{baseUrl}}/maquinas/1
+Content-Type: application/json
+
+{
+  "capacidadTon": 270
+}
+
+### Cambiar estado a MANTENIMIENTO
+PATCH {{baseUrl}}/maquinas/1/estado
+Content-Type: application/json
+
+{
+  "estado": "MANTENIMIENTO"
+}
+
+### Intentar poner el mismo estado otra vez — debe fallar con 409
+PATCH {{baseUrl}}/maquinas/1/estado
+Content-Type: application/json
+
+{
+  "estado": "MANTENIMIENTO"
+}
+
+### Regresar a ACTIVA
+PATCH {{baseUrl}}/maquinas/1/estado
+Content-Type: application/json
+
+{
+  "estado": "ACTIVA"
+}
+
+### Cambiar a INACTIVA
+PATCH {{baseUrl}}/maquinas/1/estado
+Content-Type: application/json
+
+{
+  "estado": "INACTIVA"
+}
+
+### Editar con id inexistente — debe fallar con 404
+PATCH {{baseUrl}}/maquinas/9999
+Content-Type: application/json
+
+{
+  "nombre": "No debería existir"
+}
+
+### Prueba de rol: login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar (debe dar 200)
+GET {{baseUrl}}/maquinas
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/maquinas
+Content-Type: application/json
+
+{
+  "nombre": "Intento no autorizado",
+  "codigo": "TEST-403",
+  "numero": 99,
+  "tipoProceso": "INYECCION",
+  "capacidadTon": 100
+}
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

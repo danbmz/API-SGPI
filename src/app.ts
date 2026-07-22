@@ -10,6 +10,7 @@ import errorHandlerPlugin from "./plugins/error-handler.js";
 import materiaPrimaRoutes from "./modules/materias-primas/materiaPrima.routes.js";
 import pigmentoRoutes from "./modules/pigmentos/pigmento.routes.js";
 import productoRoutes from "./modules/productos/producto.routes.js";
+import maquinaRoutes from "./modules/maquinas/maquina.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -25,6 +26,7 @@ export function buildApp() {
   app.register(materiaPrimaRoutes)
   app.register(pigmentoRoutes)
   app.register(productoRoutes)
+  app.register(maquinaRoutes)
 
   return app;
 }
