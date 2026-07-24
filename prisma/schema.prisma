@@ -42,6 +42,7 @@ model Usuario {
   confirmacionesMolino         AvanceTurno[]       @relation("ConfirmacionMolino")
   solicitudesMaterialConfirmadas SolicitudMaterial[] @relation("SolicitudMaterialConfirmadoPor")
   refreshTokens RefreshToken[] @relation("RefreshTokensUsuario")
+  historialInventario  HistorialMovimientoInventario[]
 
   @@map("usuarios")
 }
@@ -125,6 +126,8 @@ model MateriaPrima {
   ordenesProduccion OrdenProduccion[] @relation("OrdenMateriaPrimaVirgen")
   moliendas Molienda[]
   materialPigmentado  CombinacionMaterialPigmentado[]
+  movimientosVirgen HistorialMovimientoInventario[] @relation("MovimientoMateriaPrimaVirgen")
+  movimientosMolido HistorialMovimientoInventario[] @relation("MovimientoMaterialMolido")
 
   @@map("materias_primas")
 }
@@ -212,6 +215,8 @@ model Pigmento {
   inventarioProducto  InventarioProductoTerminado[]
   ordenesProduccion OrdenProduccion[]
   materialPigmentado  CombinacionMaterialPigmentado[]
+  movimientosInventario HistorialMovimientoInventario[]
+  movimientosProducto HistorialMovimientoInventario[] @relation("MovimientoColorProducto")
 
   @@unique([materiaPrimaId, color, categoriaColor, tipo])
   @@map("pigmentos")
@@ -245,6 +250,7 @@ model CombinacionMaterialPigmentado {
   createdAt      DateTime     @default(now())
 
   inventario     InventarioMaterialPigmentado?
+  movimientosMaterialPigmentado  HistorialMovimientoInventario[]
 
   @@unique([materiaPrimaId, pigmentoId])
   @@map("combinaciones_material_pigmentado")
@@ -284,6 +290,7 @@ model Producto {
 
   inventarios     InventarioProductoTerminado[]
   ordenesProduccion OrdenProduccion[]
+  movimientosInventario HistorialMovimientoInventario[]
 
   @@map("productos")
 }
@@ -588,4 +595,100 @@ model RefreshToken {
 
   @@index([usuarioId])
   @@map("refresh_tokens")
+}
+
+// ----------------------------------- historial_movimientos_inventario
+
+enum TipoInventario {
+  MATERIA_PRIMA
+  PIGMENTO
+  PRODUCTO
+  MOLIDO
+  MATERIAL_PIGMENTADO 
+}
+
+enum TipoMovimientoInventario {
+  ENTRADA
+  SALIDA
+  AJUSTE
+}
+
+enum MotivoMovimientoInventario {
+  ENTRADA_PROVEEDOR
+  PRODUCCION
+  CONSUMO_PRODUCCION
+  DEVOLUCION_MATERIAL
+  PRODUCTO_DEFECTUOSO
+  CAMBIO_COLOR
+  MERMA_PRODUCCION
+  PLASTA
+  VENTA
+  DESECHO
+  AJUSTE_MANUAL
+  CORRECCION_INVENTARIO
+  CANCELACION_ORDEN
+  SUSTITUCION_MATERIAL_PIGMENTADO
+}
+
+// Conexion a la tablas (existentes) que generan los movimientos 
+enum ReferenciaMovimientoInventario {
+  ORDEN_PRODUCCION
+  AVANCE_TURNO
+  MOLIENDA
+  SOLICITUD_MATERIAL
+}
+
+model HistorialMovimientoInventario {
+  id                 BigInt   @id @default(autoincrement())
+
+  tipoInventario     TipoInventario
+  tipoMovimiento     TipoMovimientoInventario
+  motivo             MotivoMovimientoInventario
+  descripcion        String?
+
+  // Exclusive arc: FKs reales hacia catálogo, solo el grupo correspondiente según tipoInventario
+  materiaPrimaId     BigInt?
+  materiaPrima       MateriaPrima? @relation("MovimientoMateriaPrimaVirgen", fields: [materiaPrimaId], references: [id])
+
+  pigmentoId         BigInt?
+  pigmento           Pigmento?     @relation(fields: [pigmentoId], references: [id])
+
+  productoId         BigInt?
+  producto           Producto?     @relation(fields: [productoId], references: [id])
+
+  pigmentoProductoId BigInt?
+  pigmentoProducto   Pigmento?     @relation("MovimientoColorProducto", fields: [pigmentoProductoId], references: [id])
+
+  combinacionMaterialPigmentadoId BigInt?
+  combinacionMaterialPigmentado   CombinacionMaterialPigmentado? @relation(fields: [combinacionMaterialPigmentadoId], references: [id])
+
+  materialMolidoId   BigInt?
+  materialMolido     MateriaPrima? @relation("MovimientoMaterialMolido", fields: [materialMolidoId], references: [id])
+  origenMolido       OrigenMolido?
+  colorMolido        ColorSolido?
+
+  cantidadAnterior   Decimal  @db.Decimal(10,3)
+  cantidadMovimiento Decimal  @db.Decimal(10,3) // con signo: + entrada, - salida
+  cantidadNueva      Decimal  @db.Decimal(10,3)
+  unidadMedida       UnidadMedida
+
+  // Trazabilidad hacia el origen del movimiento — opcional: no todos los motivos tienen tabla que referenciar
+  referenciaTipo     ReferenciaMovimientoInventario?
+  referenciaId       BigInt?
+
+  usuarioId          BigInt
+  usuario            Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  createdAt          DateTime @default(now())
+
+  @@index([tipoInventario, materiaPrimaId])
+  @@index([tipoInventario, pigmentoId])
+  @@index([tipoInventario, productoId])
+  @@index([tipoInventario, pigmentoProductoId])
+  @@index([tipoInventario, materialMolidoId])
+  @@index([tipoInventario, combinacionMaterialPigmentadoId])
+  @@index([motivo])
+  @@index([referenciaTipo, referenciaId])
+  @@index([createdAt])
+  @@map("historial_movimientos_inventario")
 }
