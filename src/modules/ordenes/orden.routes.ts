@@ -1,0 +1,71 @@
+import type { FastifyInstance } from "fastify";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { listarOrdenes, crearOrden, confirmarMaterialSiguiente } from "./orden.service.js";
+import {
+  crearOrdenBodySchema,
+  ordenParamsSchema,
+  ordenResponseSchema,
+  listaOrdenResponseSchema,
+  okResponseSchema,
+  errorResponseSchema,
+} from "./orden.schema.js";
+import { manejarErrorConocido } from "../../shared/errors/error-map.js";
+
+export default async function ordenRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
+  app.get(
+    "/ordenes",
+    {
+      preHandler: [app.authenticate],
+      schema: { response: { 200: listaOrdenResponseSchema } },
+    },
+    async (request, reply) => {
+      return reply.send(await listarOrdenes());
+    }
+  );
+
+  app.register(async function adminRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
+    app.addHook("preHandler", app.authorize(["ADMIN"]));
+
+    app.post(
+      "/ordenes",
+      {
+        schema: {
+          body: crearOrdenBodySchema,
+          response: {
+            201: ordenResponseSchema,
+            404: errorResponseSchema,
+            409: errorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const orden = await crearOrden(request.body, request.authUser!, request.ip);
+          return reply.code(201).send(orden);
+        } catch (err) {
+          if (manejarErrorConocido(err, reply)) return;
+          throw err;
+        }
+      }
+    );
+
+    app.patch(
+      "/ordenes/:id/confirmar-material",
+      {
+        schema: {
+          params: ordenParamsSchema,
+          response: { 200: okResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema },
+        },
+      },
+      async (request, reply) => {
+        try {
+          await confirmarMaterialSiguiente(BigInt(request.params.id), request.authUser!, request.ip);
+          return reply.send({ ok: true });
+        } catch (err) {
+          if (manejarErrorConocido(err, reply)) return;
+          throw err;
+        }
+      }
+    );
+  });
+}

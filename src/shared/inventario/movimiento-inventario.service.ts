@@ -6,6 +6,7 @@ import type {
   MovimientoProductoInput,
   MovimientoMolidoInput,
   MovimientoMaterialPigmentadoInput,
+  PrismaTransactionClient
 } from "./movimiento-inventario.types.js";
 
 // Calcula el valor con signo real que se guarda en cantidadMovimiento
@@ -21,9 +22,12 @@ function calcularCantidadConSigno(
 
 // ---------- MATERIA PRIMA ----------
 
-export async function registrarMovimientoMateriaPrima(input: MovimientoMateriaPrimaInput) {
+export async function registrarMovimientoMateriaPrima(
+  input: MovimientoMateriaPrimaInput, 
+  txExterna?:PrismaTransactionClient
+) {
   // Usamos $transaction(), el metodo de control de Prisma para ejecutar multiples operaciones de bases de datos como un bloque unico, asegura que todas se realizen con exito o ninguna se guarde (RollBack).
-  return prisma.$transaction(async (tx) => {
+  const ejecutar = async (tx: PrismaTransactionClient) => {
     // tx: version especial de prisma con los mismos metodos, permite que todas las operaciones ocurran dentro de transaction y no como operaciones sueltas.
     const inventario = await tx.inventarioMateriaPrima.findUnique({
       where: { materiaPrimaId: input.materiaPrimaId },
@@ -63,13 +67,23 @@ export async function registrarMovimientoMateriaPrima(input: MovimientoMateriaPr
       where: { materiaPrimaId: input.materiaPrimaId },
       data: { cantidadActual: cantidadNueva },
     });
-  });
+  };
+
+  // Si hay una transaccion abierta, ejecutamos la funcion junto a esa transaccion
+  if(txExterna) {
+    return ejecutar(txExterna)
+  }
+  // Si no, abrimos una propia transaccion.
+  return prisma.$transaction(ejecutar);
 }
 
 // ---------- PIGMENTO ----------
 
-export async function registrarMovimientoPigmento(input: MovimientoPigmentoInput) {
-  return prisma.$transaction(async (tx) => {
+export async function registrarMovimientoPigmento(
+  input: MovimientoPigmentoInput,
+  txExterna?: PrismaTransactionClient
+) {
+  const ejecutar = async (tx: PrismaTransactionClient) => {
     // El doble include indica que traiga el registro de materiaPrima relacionado a Pigmento que a su vez esta relacionado a InventarioPigmento.
     const inventario = await tx.inventarioPigmento.findUnique({
       where: { pigmentoId: input.pigmentoId },
@@ -106,13 +120,23 @@ export async function registrarMovimientoPigmento(input: MovimientoPigmentoInput
       where: { pigmentoId: input.pigmentoId },
       data: { cantidadActual: cantidadNueva },
     });
-  });
+  };
+
+  // Si hay una transaccion abierta, ejecutamos la funcion junto a esa transaccion
+  if(txExterna) {
+    return ejecutar(txExterna)
+  }
+  // Si no, abrimos una propia transaccion.
+  return prisma.$transaction(ejecutar);
 }
 
 // ---------- PRODUCTO TERMINADO (identidad: producto + pigmento) ----------
 
-export async function registrarMovimientoProducto(input: MovimientoProductoInput) {
-  return prisma.$transaction(async (tx) => {
+export async function registrarMovimientoProducto(
+  input: MovimientoProductoInput,
+  txExterna?: PrismaTransactionClient
+) {
+  const ejecutar = async (tx:PrismaTransactionClient) => {
     // Upsert: (Update n Insert) puede ser la primera vez que se produce esta combinación
     const inventario = await tx.inventarioProductoTerminado.upsert({
       where: {
@@ -161,13 +185,23 @@ export async function registrarMovimientoProducto(input: MovimientoProductoInput
       },
       data: { cantidadActual: cantidadNueva },
     });
-  });
+  };
+
+  // Si hay una transaccion abierta, ejecutamos la funcion junto a esa transaccion
+  if(txExterna) {
+    return ejecutar(txExterna)
+  }
+  // Si no, abrimos una propia transaccion.
+  return prisma.$transaction(ejecutar);
 }
 
 // ---------- MOLIDO (identidad: materiaPrima + origen + color) ----------
 
-export async function registrarMovimientoMolido(input: MovimientoMolidoInput) {
-  return prisma.$transaction(async (tx) => {
+export async function registrarMovimientoMolido(
+  input: MovimientoMolidoInput,
+  txExterna?: PrismaTransactionClient
+) {
+  const ejecutar = async (tx: PrismaTransactionClient) => {
     // Capa de seguridad, si no existe la materia prima, no deberia poder existir un registro de inventario
     const materiaPrima = await tx.materiaPrima.findUnique({
       where: { id: input.materiaPrimaId },
@@ -177,16 +211,16 @@ export async function registrarMovimientoMolido(input: MovimientoMolidoInput) {
 
     const inventario = await tx.inventarioMolido.upsert({
       where: {
-        materiaPrimaId_origen_color: {
+        materiaPrimaId_origen_colorSolidoId: {
           materiaPrimaId: input.materiaPrimaId,
           origen: input.origen,
-          color: input.color,
+          colorSolidoId: input.colorSolidoId,
         },
       },
       create: {
         materiaPrimaId: input.materiaPrimaId,
         origen: input.origen,
-        color: input.color,
+        colorSolidoId: input.colorSolidoId,
         cantidadActual: 0,
       },
       update: {},
@@ -203,7 +237,7 @@ export async function registrarMovimientoMolido(input: MovimientoMolidoInput) {
         motivo: input.motivo,
         materialMolidoId: input.materiaPrimaId,
         origenMolido: input.origen,
-        colorMolido: input.color,
+        colorSolidoId: input.colorSolidoId,
         cantidadAnterior,
         cantidadMovimiento,
         cantidadNueva,
@@ -217,23 +251,31 @@ export async function registrarMovimientoMolido(input: MovimientoMolidoInput) {
 
     return tx.inventarioMolido.update({
       where: {
-        materiaPrimaId_origen_color: {
+        materiaPrimaId_origen_colorSolidoId: {
           materiaPrimaId: input.materiaPrimaId,
           origen: input.origen,
-          color: input.color,
+          colorSolidoId: input.colorSolidoId,
         },
       },
       data: { cantidadActual: cantidadNueva },
     });
-  });
+  };
+
+  // Si hay una transaccion abierta, ejecutamos la funcion junto a esa transaccion
+  if(txExterna) {
+    return ejecutar(txExterna)
+  }
+  // Si no, abrimos una propia transaccion.
+  return prisma.$transaction(ejecutar);
 }
 
 // ---------- MATERIAL PIGMENTADO (identidad: materiaPrima + pigmento) ----------
 
 export async function registrarMovimientoMaterialPigmentado(
-  input: MovimientoMaterialPigmentadoInput
+  input: MovimientoMaterialPigmentadoInput,
+  txExterna?: PrismaTransactionClient
 ) {
-  return prisma.$transaction(async (tx) => {
+  const ejecutar = async (tx:PrismaTransactionClient) => {
     const materiaPrima = await tx.materiaPrima.findUnique({
       where: { id: input.materiaPrimaId },
     });
@@ -286,5 +328,12 @@ export async function registrarMovimientoMaterialPigmentado(
       where: { combinacionId: combinacion.id },
       data: { cantidadActual: cantidadNueva },
     });
-  });
+  };
+
+  // Si hay una transaccion abierta, ejecutamos la funcion junto a esa transaccion
+  if(txExterna) {
+    return ejecutar(txExterna)
+  }
+  // Si no, abrimos una propia transaccion.
+  return prisma.$transaction(ejecutar);
 }

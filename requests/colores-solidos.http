@@ -1,0 +1,128 @@
+### colores-solidos.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar colores sólidos — debería venir vacío al inicio
+GET {{baseUrl}}/colores-solidos
+
+### Crear color — Rojo
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Rojo"
+}
+
+### Crear color — Azul
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Azul"
+}
+
+### Crear color — Verde
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Verde"
+}
+
+### Crear color — Amarillo
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Amarillo"
+}
+
+### Crear color — Naranja
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Naranja"
+}
+
+### Crear color — Morado
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Morado"
+}
+
+### Intentar crear con el mismo nombre — debe fallar con 409
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Rojo"
+}
+
+### Editar color (reemplaza el 1 por el id real que regresó el create)
+PATCH {{baseUrl}}/colores-solidos/1
+Content-Type: application/json
+
+{
+  "nombre": "Rojo Intenso"
+}
+
+### Desactivar color
+DELETE {{baseUrl}}/colores-solidos/1
+
+### Intentar desactivarlo de nuevo — debe fallar con 409
+DELETE {{baseUrl}}/colores-solidos/1
+
+### Reactivar color
+PATCH {{baseUrl}}/colores-solidos/1/reactivar
+
+### Intentar reactivarlo de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/colores-solidos/1/reactivar
+
+### Editar con id inexistente — debe fallar con 404
+PATCH {{baseUrl}}/colores-solidos/9999
+Content-Type: application/json
+
+{
+  "nombre": "No debería existir"
+}
+
+### Prueba de rol: login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar (debe dar 200)
+GET {{baseUrl}}/colores-solidos
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/colores-solidos
+Content-Type: application/json
+
+{
+  "nombre": "Intento no autorizado"
+}
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

@@ -29,9 +29,14 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   MAQUINA_YA_EN_ESE_ESTADO: {code: 409, message: "La maquina ya está en ese estado"},
   // ERRORES MOTIVOS PARO
   MOTIVO_PARO_NO_ENCONTRADO: {code: 404, message: "Motivo no encontrado"},
-  MOTIVO_PARO_YA_EXISTE: {code: 404, message: "Este motivo ya existe"},
-  MOTIVO_PARO_YA_INACTIVO: {code: 404, message: "El motivo ya está desactivado"},
-  MOTIVO_PARO_YA_ACTIVO: {code: 404, message: "El motivo ya está activo"},
+  MOTIVO_PARO_YA_EXISTE: {code: 409, message: "Este motivo ya existe"},
+  MOTIVO_PARO_YA_INACTIVO: {code: 409, message: "El motivo ya está desactivado"},
+  MOTIVO_PARO_YA_ACTIVO: {code: 409, message: "El motivo ya está activo"},
+  // ERRORES COLORES SOLIDOS
+  COLOR_SOLIDO_NO_ENCONTRADO: {code: 404, message: "Color no encontrado"},
+  COLOR_SOLIDO_YA_EXISTE: {code: 409, message: "Este color ya existe"},
+  COLOR_SOLIDO_YA_INACTIVO: {code: 409, message: "El color ya está desactivado"},
+  COLOR_SOLIDO_YA_ACTIVO: {code: 409, message: "El color ya está activo"},
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

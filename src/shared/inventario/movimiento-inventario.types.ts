@@ -3,7 +3,8 @@ import type {
   MotivoMovimientoInventario,
   ReferenciaMovimientoInventario,
   OrigenMolido,
-  ColorSolido,
+  Prisma,
+  PrismaClient
 } from "../../../prisma/generated/prisma/client/client.js";
 
 export interface MovimientoBase {
@@ -34,7 +35,7 @@ export interface MovimientoProductoInput extends MovimientoBase {
 export interface MovimientoMolidoInput extends MovimientoBase {
   materiaPrimaId: bigint;
   origen: OrigenMolido;
-  color: ColorSolido;
+  colorSolidoId: bigint;
   cantidad: number;
 }
 
@@ -43,3 +44,9 @@ export interface MovimientoMaterialPigmentadoInput extends MovimientoBase {
   pigmentoId: bigint;
   cantidad: number;
 }
+
+// La forma de TX dentro del cliente transaccional, tipada para poder condicionar el uso de una transaccion externa en las funciones de movimiento-inventario.service.ts
+export type PrismaTransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;

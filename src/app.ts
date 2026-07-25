@@ -12,6 +12,9 @@ import pigmentoRoutes from "./modules/pigmentos/pigmento.routes.js";
 import productoRoutes from "./modules/productos/producto.routes.js";
 import maquinaRoutes from "./modules/maquinas/maquina.routes.js";
 import motivoParoRoutes from "./modules/motivos-paro/motivoParo.routes.js";
+import colorSolidoRoutes from "./modules/colores-solidos/colorSolido.routes.js";
+import inventarioRoutes from "./modules/inventario/inventario.routes.js";
+import ordenRoutes from "./modules/ordenes/orden.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -29,6 +32,9 @@ export function buildApp() {
   app.register(productoRoutes)
   app.register(maquinaRoutes)
   app.register(motivoParoRoutes)
+  app.register(colorSolidoRoutes)
+  app.register(inventarioRoutes)
+  app.register(ordenRoutes)
 
   return app;
 }

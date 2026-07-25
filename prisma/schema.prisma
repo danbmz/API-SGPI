@@ -146,20 +146,27 @@ model InventarioMateriaPrima {
   @@map("inventario_materias_primas")
 }
 
+// ----------------------------------- CATALOGO DE COLORES SOLIDOS (para moliendas)
+
+model ColorSolido {
+  id        BigInt   @id @default(autoincrement())
+  nombre    String   @unique
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inventariosMolido InventarioMolido[]                @relation("InventarioMolidoColor")
+  movimientos       HistorialMovimientoInventario[]   @relation("MovimientoColorSolido")
+  moliendas         Molienda[]                        @relation("MoliendaColor")
+
+  @@map("colores_solidos")
+}
+
 // ---------------------------------- INVENTARIO / MOLIDO
 
 enum OrigenMolido {
   INTERNO
   COMPRADO
-}
-
-enum ColorSolido {
-  ROJO
-  AZUL
-  VERDE
-  AMARILLO
-  NARANJA
-  MORADO
 }
 
 model InventarioMolido {
@@ -169,7 +176,8 @@ model InventarioMolido {
   materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
 
   origen         OrigenMolido
-  color          ColorSolido
+  colorSolidoId  BigInt
+  colorSolido    ColorSolido @relation("InventarioMolidoColor", fields: [colorSolidoId], references: [id])
 
   cantidadActual Decimal      @db.Decimal(10,3)
 
@@ -177,7 +185,7 @@ model InventarioMolido {
 
   ordenesProduccion OrdenProduccion[]
 
-  @@unique([materiaPrimaId, origen, color])
+  @@unique([materiaPrimaId, origen, colorSolidoId])
   @@map("inventario_molido")
 }
 
@@ -548,7 +556,9 @@ model Molienda {
   materiaPrimaId  BigInt
   materiaPrima    MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
 
-  colorAproximado ColorSolido
+  colorSolidoId   BigInt
+  colorSolido     ColorSolido @relation("MoliendaColor", fields: [colorSolidoId], references: [id])
+
   kgIngresados    Decimal     @db.Decimal(10,3)
   fecha           DateTime
 
@@ -664,8 +674,9 @@ model HistorialMovimientoInventario {
 
   materialMolidoId   BigInt?
   materialMolido     MateriaPrima? @relation("MovimientoMaterialMolido", fields: [materialMolidoId], references: [id])
-  origenMolido       OrigenMolido?
-  colorMolido        ColorSolido?
+  origenMolido     OrigenMolido?
+  colorSolidoId    BigInt?
+  colorSolido      ColorSolido? @relation("MovimientoColorSolido", fields: [colorSolidoId], references: [id])
 
   cantidadAnterior   Decimal  @db.Decimal(10,3)
   cantidadMovimiento Decimal  @db.Decimal(10,3) // con signo: + entrada, - salida
