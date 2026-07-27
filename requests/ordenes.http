@@ -1,0 +1,141 @@
+### ordenes.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar órdenes — vacío al inicio
+GET {{baseUrl}}/ordenes
+
+### Ver estado del inventario antes de crear la orden (para comparar después)
+GET {{baseUrl}}/inventario/materias-primas
+
+###
+GET {{baseUrl}}/inventario/pigmentos
+
+### Crear orden 100% virgen (ajusta los IDs a los reales de tu base)
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-002",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 200,
+  "clienteDestino": "BAKAR"
+}
+
+### Verificar que el inventario se descontó
+GET {{baseUrl}}/inventario/materias-primas
+
+###
+GET {{baseUrl}}/inventario/pigmentos
+
+### Verificar el historial de movimientos generado por la orden (ajusta materiaPrimaId)
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=MATERIA_PRIMA&materiaPrimaId=1
+
+### Intentar crear con el mismo folio — debe fallar con 409
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-001",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 100
+}
+
+### Intentar crear una orden que exceda el stock disponible — debe fallar con 409
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-002",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 999999999
+}
+
+### PRUEBAS DE CAMBIO DE ESTADO - Activar
+PATCH {{baseUrl}}/ordenes/1/activar
+
+### Pausar orden
+PATCH {{baseUrl}}/ordenes/2/pausar
+Content-Type: application/json
+
+{
+    "motivo": "Falta de personal"
+}
+
+### Reanudar orden
+PATCH {{baseUrl}}/ordenes/2/reanudar
+
+
+### Prueba de rol: pigmento puede confirmar material
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "pigmento02",
+  "password": "pigmento123"
+}
+
+### Confirmar material siguiente (reemplaza el 1 por el id real de la orden creada)
+PATCH {{baseUrl}}/ordenes/1/confirmar-material
+
+### Intentar confirmarlo de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/ordenes/1/confirmar-material
+
+### Confirmar con orden inexistente — debe fallar con 404
+PATCH {{baseUrl}}/ordenes/9999/confirmar-material
+
+### Prueba de rol: supervisor no puede crear
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor SÍ puede listar
+GET {{baseUrl}}/ordenes
+
+### Supervisor NO puede crear — debe fallar con 403
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-003",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 100
+}
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

@@ -115,3 +115,11 @@ export const listaOrdenResponseSchema = Type.Array(ordenResponseSchema);
 
 export const okResponseSchema = Type.Object({ ok: Type.Boolean() });
 export const errorResponseSchema = Type.Object({ error: Type.String() });
+
+// cambiar estado de la orden
+
+export const cambiarEstadoOrdenBodySchema = Type.Object({
+  motivo: Type.Optional(Type.String({ maxLength: 300 })),
+});
+
+export type CambiarEstadoOrdenBody = Static<typeof cambiarEstadoOrdenBodySchema>;

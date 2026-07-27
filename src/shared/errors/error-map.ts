@@ -37,6 +37,16 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   COLOR_SOLIDO_YA_EXISTE: {code: 409, message: "Este color ya existe"},
   COLOR_SOLIDO_YA_INACTIVO: {code: 409, message: "El color ya está desactivado"},
   COLOR_SOLIDO_YA_ACTIVO: {code: 409, message: "El color ya está activo"},
+  // ERRORES ORDENES
+  ORDEN_NO_ENCONTRADA: {code: 404, message: "Orden no encontrada"},
+  ORDEN_FOLIO_YA_EXISTE: {code: 409, message: "El folio ya existe"},
+  STOCK_INSUFICIENTE_MATERIA_PRIMA: {code: 409, message: "No hay suficiente material para completar esta orden"},
+  STOCK_INSUFICIENTE_PIGMENTO: {code: 409, message: "No hay suficiente pigmento para completar esta orden"},
+  STOCK_INSUFICIENTE_MOLIDO: {code: 409, message: "No hay suficiente molido para completar esta orden"},
+  MATERIAL_YA_CONFIRMADO: {code: 409, message: "El material ya ha sido confirmado"},
+  ORDEN_NO_SE_PUEDE_ACTIVAR: {code: 409, message: "La orden ya está activa"},
+  ORDEN_NO_SE_PUEDE_PAUSAR: {code: 409, message: "La orden no se puede pausar"},
+  ORDEN_NO_SE_PUEDE_REANUDAR: {code: 409, message: "La orden no se puede reanudar"}
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

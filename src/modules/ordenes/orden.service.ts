@@ -251,3 +251,65 @@ export async function confirmarMaterialSiguiente(id: bigint, actor: AuthUser, ip
     ...(ip !== undefined && { ip }),
   });
 }
+
+export async function activarOrden(id: bigint, actor: AuthUser, ip?: string) {
+  const orden = await prisma.ordenProduccion.findUnique({ where: { id } });
+  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
+  if (orden.estado !== "BORRADOR") throw new Error("ORDEN_NO_SE_PUEDE_ACTIVAR");
+
+  await prisma.ordenProduccion.update({ where: { id }, data: { estado: "ACTIVA" } });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "activar",
+    entidad: "orden_produccion",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
+  });
+}
+
+export async function pausarOrden(id: bigint, actor: AuthUser, motivo?: string, ip?: string) {
+  const orden = await prisma.ordenProduccion.findUnique({ where: { id } });
+  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
+  if (orden.estado !== "ACTIVA" && orden.estado !== "EN_PROGRESO") {
+    throw new Error("ORDEN_NO_SE_PUEDE_PAUSAR");
+  }
+
+  await prisma.ordenProduccion.update({ where: { id }, data: { estado: "PAUSADA" } });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "pausar",
+    entidad: "orden_produccion",
+    entidadId: id,
+    ...(motivo !== undefined && { detalle: motivo }),
+    ...(ip !== undefined && { ip }),
+  });
+}
+
+export async function reanudarOrden(id: bigint, actor: AuthUser, ip?: string) {
+  const orden = await prisma.ordenProduccion.findUnique({ where: { id } });
+  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
+  if (orden.estado !== "PAUSADA") throw new Error("ORDEN_NO_SE_PUEDE_REANUDAR");
+
+  // Nota: al reanudar, no sabemos si venía de ACTIVA o EN_PROGRESO sin avances_turno.
+  // Por ahora, siempre regresa a ACTIVA — se ajustará cuando exista el historial de avances.
+  await prisma.ordenProduccion.update({ where: { id }, data: { estado: "ACTIVA" } });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "reanudar",
+    entidad: "orden_produccion",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
+  });
+}
