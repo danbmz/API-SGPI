@@ -313,3 +313,94 @@ export async function reanudarOrden(id: bigint, actor: AuthUser, ip?: string) {
     ...(ip !== undefined && { ip }),
   });
 }
+
+export async function cancelarOrden(
+  id: bigint,
+  data: CancelarOrdenBody,
+  actor: AuthUser,
+  ip?: string
+) {
+  const orden = await prisma.ordenProduccion.findUnique({ where: { id } });
+  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
+
+  if (orden.estado === "COMPLETADA" || orden.estado === "CANCELADA") {
+    throw new Error("ORDEN_NO_SE_PUEDE_CANCELAR");
+  }
+
+  if (orden.estado === "EN_PROGRESO") {
+    // Requiere calcular consumo real desde avances_turno, que aún no existe.
+    throw new Error("CANCELACION_EN_PROGRESO_NO_DISPONIBLE");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.ordenProduccion.update({
+      where: { id },
+      data: { estado: "CANCELADA" },
+    });
+
+    // Revertir 100% de lo reservado: materia prima virgen
+    await registrarMovimientoMateriaPrima(
+      {
+        materiaPrimaId: orden.materiaPrimaId,
+        tipoMovimiento: "ENTRADA",
+        motivo: "CANCELACION_ORDEN",
+        cantidad: Number(orden.materiaPrimaVirgenKg),
+        usuarioId: actor.id,
+        referenciaTipo: "ORDEN_PRODUCCION",
+        referenciaId: id,
+        descripcion: `Cancelación de orden ${orden.folio}: ${data.motivo}`,
+      },
+      tx as unknown as PrismaTransactionClient
+    );
+
+    // Revertir pigmento
+    await registrarMovimientoPigmento(
+      {
+        pigmentoId: orden.pigmentoId,
+        tipoMovimiento: "ENTRADA",
+        motivo: "CANCELACION_ORDEN",
+        cantidad: Number(orden.pigmentoRequeridoKg),
+        usuarioId: actor.id,
+        referenciaTipo: "ORDEN_PRODUCCION",
+        referenciaId: id,
+        descripcion: `Cancelación de orden ${orden.folio}: ${data.motivo}`,
+      },
+      tx as unknown as PrismaTransactionClient
+    );
+
+    // Revertir molido, si aplica
+    if (orden.inventarioMolidoId) {
+      const inventarioMolido = await tx.inventarioMolido.findUniqueOrThrow({
+        where: { id: orden.inventarioMolidoId },
+      });
+
+      await registrarMovimientoMolido(
+        {
+          materiaPrimaId: inventarioMolido.materiaPrimaId,
+          origen: inventarioMolido.origen,
+          colorSolidoId: inventarioMolido.colorSolidoId,
+          tipoMovimiento: "ENTRADA",
+          motivo: "CANCELACION_ORDEN",
+          cantidad: Number(orden.materialMolidoKg),
+          usuarioId: actor.id,
+          referenciaTipo: "ORDEN_PRODUCCION",
+          referenciaId: id,
+          descripcion: `Cancelación de orden ${orden.folio}: ${data.motivo}`,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "cancelar",
+    entidad: "orden_produccion",
+    entidadId: id,
+    detalle: data.motivo,
+    ...(ip !== undefined && { ip }),
+  });
+}

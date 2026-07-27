@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { listarOrdenes, crearOrden, confirmarMaterialSiguiente, activarOrden, pausarOrden, reanudarOrden } from "./orden.service.js";
+import { listarOrdenes, crearOrden, confirmarMaterialSiguiente, activarOrden, pausarOrden, reanudarOrden, cancelarOrden } from "./orden.service.js";
 import {
   crearOrdenBodySchema,
   ordenParamsSchema,
@@ -9,6 +9,7 @@ import {
   okResponseSchema,
   errorResponseSchema,
   cambiarEstadoOrdenBodySchema,
+  cancelarOrdenBodySchema,
 } from "./orden.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -28,6 +29,7 @@ export default async function ordenRoutes(app: FastifyInstance<any, any, any, an
   app.register(async function adminRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
     app.addHook("preHandler", app.authorize(["ADMIN"]));
 
+    // ---------- Crear nueva orden
     app.post(
       "/ordenes",
       {
@@ -109,6 +111,27 @@ export default async function ordenRoutes(app: FastifyInstance<any, any, any, an
     async (request, reply) => {
         try {
         await reanudarOrden(BigInt(request.params.id), request.authUser!, request.ip);
+        return reply.send({ ok: true });
+        } catch (err) {
+        if (manejarErrorConocido(err, reply)) return;
+        throw err;
+        }
+    }
+    );
+
+    // ---------- Cancelar orden
+    app.patch(
+    "/ordenes/:id/cancelar",
+    {
+        schema: {
+        params: ordenParamsSchema,
+        body: cancelarOrdenBodySchema,
+        response: { 200: okResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema },
+        },
+    },
+    async (request, reply) => {
+        try {
+        await cancelarOrden(BigInt(request.params.id), request.body, request.authUser!, request.ip);
         return reply.send({ ok: true });
         } catch (err) {
         if (manejarErrorConocido(err, reply)) return;

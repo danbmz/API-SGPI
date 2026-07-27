@@ -46,7 +46,9 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   MATERIAL_YA_CONFIRMADO: {code: 409, message: "El material ya ha sido confirmado"},
   ORDEN_NO_SE_PUEDE_ACTIVAR: {code: 409, message: "La orden ya está activa"},
   ORDEN_NO_SE_PUEDE_PAUSAR: {code: 409, message: "La orden no se puede pausar"},
-  ORDEN_NO_SE_PUEDE_REANUDAR: {code: 409, message: "La orden no se puede reanudar"}
+  ORDEN_NO_SE_PUEDE_REANUDAR: {code: 409, message: "La orden no se puede reanudar"},
+  ORDEN_NO_SE_PUEDE_CANCELAR: {code: 409, message: "La orden no se puede cancelar"},
+  CANCELACION_EN_PROGRESO_NO_DISPONIBLE: {code: 409, message: "No puedes cancelar una orden ya iniciada"}
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

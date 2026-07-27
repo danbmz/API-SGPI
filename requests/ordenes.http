@@ -44,6 +44,9 @@ GET {{baseUrl}}/inventario/pigmentos
 ### Verificar el historial de movimientos generado por la orden (ajusta materiaPrimaId)
 GET {{baseUrl}}/inventario/movimientos?tipoInventario=MATERIA_PRIMA&materiaPrimaId=1
 
+### Verificar el historial de movimientos generado por la orden (ajusta pigmentoId)
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=PIGMENTO&pigmentoId=1
+
 ### Intentar crear con el mismo folio — debe fallar con 409
 POST {{baseUrl}}/ordenes
 Content-Type: application/json
@@ -73,7 +76,7 @@ Content-Type: application/json
 }
 
 ### PRUEBAS DE CAMBIO DE ESTADO - Activar
-PATCH {{baseUrl}}/ordenes/1/activar
+PATCH {{baseUrl}}/ordenes/2/activar
 
 ### Pausar orden
 PATCH {{baseUrl}}/ordenes/2/pausar
@@ -86,6 +89,13 @@ Content-Type: application/json
 ### Reanudar orden
 PATCH {{baseUrl}}/ordenes/2/reanudar
 
+### Cancelar orden activa (aún no iniciada)
+PATCH {{baseUrl}}/ordenes/2/cancelar
+Content-Type: application/json
+
+{
+  "motivo": "Pedido modificado"
+}
 
 ### Prueba de rol: pigmento puede confirmar material
 POST {{baseUrl}}/auth/login
