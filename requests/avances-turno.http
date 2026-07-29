@@ -1,0 +1,209 @@
+### avances-turno.http
+
+@baseUrl = http://localhost:3000
+
+### ============ SETUP ============
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Crear una orden de prueba para trabajar (ajusta los IDs a los reales)
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-TEST-01",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 1000,
+  "clienteDestino": "STOCK"
+}
+
+### Activar la orden (reemplaza el id real de la orden creada)
+PATCH {{baseUrl}}/ordenes/3/activar
+
+### ============ LOGIN COMO SUPERVISOR ============
+
+### Login supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Listar avances — vacío al inicio
+GET {{baseUrl}}/avances-turno
+
+### Crear avance de turno 
+POST {{baseUrl}}/avances-turno
+Content-Type: application/json
+
+{
+  "ordenId": "1",
+  "turno": "MANANA",
+  "fecha": "2026-07-28",
+  "horaInicio": "2026-07-28T06:00:00Z"
+}
+
+### Verificar que la orden pasó a EN_PROGRESO
+GET {{baseUrl}}/ordenes
+
+### Intentar crear un SEGUNDO avance abierto sobre la misma orden — debe fallar con 409
+POST {{baseUrl}}/avances-turno
+Content-Type: application/json
+
+{
+  "ordenId": "3",
+  "turno": "TARDE",
+  "fecha": "2026-07-28",
+  "horaInicio": "2026-07-28T14:00:00Z"
+}
+
+### Guardar borrador (actualizar sin cerrar) — reemplaza el id del avance
+PATCH {{baseUrl}}/avances-turno/4
+Content-Type: application/json
+
+{
+  "piezasBuenas": 500,
+  "piezasDefectuosas": 10,
+  "kgMerma": 5,
+  "kgPlasta": 2,
+  "observaciones": "Turno normal, sin incidencias hasta el momento"
+}
+
+### Intentar cerrar SIN los campos obligatorios — debe fallar con 400
+PATCH {{baseUrl}}/avances-turno/4/cerrar
+Content-Type: application/json
+
+{
+  "horaFin": "2026-07-28T14:00:00Z"
+}
+
+### Cerrar el avance correctamente (no completa la orden: 500 de 1000)
+PATCH {{baseUrl}}/avances-turno/5/cerrar
+Content-Type: application/json
+
+{
+  "horaFin": "2026-07-28T14:00:00Z",
+  "piezasBuenas": 0,
+  "piezasDefectuosas": 0,
+  "kgMerma": 0,
+  "kgPlasta": 2,
+  "kgSobrante": 3,
+  "observaciones": "Turno cerrado sin incidencias"
+}
+
+### Verificar que la orden SIGUE en EN_PROGRESO (no se completó, van 500/1000)
+GET {{baseUrl}}/ordenes
+
+### Verificar que el inventario de producto terminado ya tiene las 500 piezas
+GET {{baseUrl}}/inventario/productos
+
+### Intentar cerrar el mismo avance de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/avances-turno/1/cerrar
+Content-Type: application/json
+
+{
+  "horaFin": "2026-07-28T14:00:00Z",
+  "piezasBuenas": 100,
+  "piezasDefectuosas": 0,
+  "kgMerma": 0,
+  "kgPlasta": 0
+}
+
+### Intentar actualizar un avance YA cerrado — debe fallar con 409
+PATCH {{baseUrl}}/avances-turno/1
+Content-Type: application/json
+
+{
+  "piezasBuenas": 999
+}
+
+### Ahora sí, crear un SEGUNDO avance (el primero ya se cerró, esto debe funcionar)
+POST {{baseUrl}}/avances-turno
+Content-Type: application/json
+
+{
+  "ordenId": "3",
+  "turno": "TARDE",
+  "fecha": "2026-07-28",
+  "horaInicio": "2026-07-28T14:00:00Z"
+}
+
+### Cerrar este segundo avance con EXCEDENTE (600 piezas, cuando solo faltaban 500)
+### Esto debe completar la orden automáticamente
+PATCH {{baseUrl}}/avances-turno/3/cerrar
+Content-Type: application/json
+
+{
+  "horaFin": "2026-07-28T22:00:00Z",
+  "piezasBuenas": 600,
+  "piezasDefectuosas": 5,
+  "kgMerma": 3,
+  "kgPlasta": 1
+}
+
+### Verificar que la orden ahora está COMPLETADA
+GET {{baseUrl}}/ordenes
+
+### Verificar que el inventario de producto terminado ahora tiene 1100 piezas (500+600)
+GET {{baseUrl}}/inventario/productos
+
+### Intentar crear un avance sobre una orden ya COMPLETADA — debe fallar con 409
+POST {{baseUrl}}/avances-turno
+Content-Type: application/json
+
+{
+  "ordenId": "3",
+  "turno": "NOCHE",
+  "fecha": "2026-07-28",
+  "horaInicio": "2026-07-28T22:00:00Z"
+}
+
+### Login como Molino
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "molino02",
+  "password": "nuevaPassword456"
+}
+
+### Confirmar entrada a Molino (cantidad exacta o con diferencia)
+PATCH {{baseUrl}}/avances-turno/99/confirmar-molino 
+Content-Type: application/json
+
+{
+    "kgMermaRecibida": "500",
+    "kgPlastaRecibida": "2",
+    "piezasMalasRecibidas": "10",
+    "piezasCambioColorRecibidas": "0" 
+}
+
+### Login como Pigmentos
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "pigmento02",
+  "password": "pigmento123"
+}
+
+### Confirmar sobrante (indicamos que si llego el material a Pigmentos)
+PATCH {{baseUrl}}/avances-turno/10/confirmar-sobrante
+Content-Type: application/json
+
+{
+    "confirmado": true
+}

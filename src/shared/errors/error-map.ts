@@ -48,7 +48,17 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   ORDEN_NO_SE_PUEDE_PAUSAR: {code: 409, message: "La orden no se puede pausar"},
   ORDEN_NO_SE_PUEDE_REANUDAR: {code: 409, message: "La orden no se puede reanudar"},
   ORDEN_NO_SE_PUEDE_CANCELAR: {code: 409, message: "La orden no se puede cancelar"},
-  CANCELACION_EN_PROGRESO_NO_DISPONIBLE: {code: 409, message: "No puedes cancelar una orden ya iniciada"}
+  CANCELACION_EN_PROGRESO_NO_DISPONIBLE: {code: 409, message: "No puedes cancelar una orden ya iniciada"},
+  // ERRORES EN AVANCES DE TURNO
+  AVANCE_TURNO_NO_ENCONTRADO: {code: 404, message: "Avance no encontrado"},
+  ORDEN_NO_DISPONIBLE_PARA_AVANCE: {code: 409, message: "No puedes abrir avance de esta orden"},
+  AVANCE_TURNO_NO_PROPIO: {code: 409, message: "No puedes modificar avances que no creaste"},
+  AVANCE_TURNO_YA_CERRADO: {code: 409, message: "No puedes modificar una avance cerrado"},
+  AVANCE_TURNO_NO_CERRADO: {code: 409, message: "El avance aún no está cerrado"},
+  AVANCE_TURNO_YA_CONFIRMADO_MOLINO: {code: 409, message: "Este avance ya ha sido confirmado"},
+  AVANCE_TURNO_SIN_SOBRANTE: {code: 409, message: "No hay material sobrante de este avance"},
+  SOBRANTE_YA_CONFIRMADO: {code: 409, message: "El sobrante de este avance ya ha sido confirmado"},
+  ORDEN_YA_TIENE_AVANCE_ABIERTO: {code: 409, message: "Esta orden ya se esta trabajando"}
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

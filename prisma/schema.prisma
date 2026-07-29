@@ -440,7 +440,6 @@ model OrdenProduccion {
   updatedAt DateTime @updatedAt
 
   avancesTurno AvanceTurno[]
-  moliendas MoliendaOrden[]
 
   @@map("ordenes_produccion")
 }
@@ -505,6 +504,7 @@ model AvanceTurno {
 
   tiemposParo         TiempoParo[]
   solicitudesMaterial SolicitudMaterial[]
+  moliendas           MoliendaAvanceTurno[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -564,26 +564,26 @@ model Molienda {
 
   observaciones   String?
 
-  ordenes         MoliendaOrden[]
+  avancesTurno    MoliendaAvanceTurno[]  // ← antes: ordenes MoliendaOrden[]
 
   createdAt       DateTime    @default(now())
 
   @@map("moliendas")
 }
 
-model MoliendaOrden {
+model MoliendaAvanceTurno {
   id          BigInt   @id @default(autoincrement())
 
   moliendaId  BigInt
   molienda    Molienda        @relation(fields: [moliendaId], references: [id])
 
-  ordenId     BigInt
-  orden       OrdenProduccion @relation(fields: [ordenId], references: [id])
+  avanceTurnoId  BigInt
+  avanceTurno    AvanceTurno @relation(fields: [avanceTurnoId], references: [id])
 
   createdAt   DateTime @default(now())
 
-  @@unique([moliendaId, ordenId])
-  @@map("moliendas_ordenes")
+  @@unique([moliendaId, avanceTurnoId])
+  @@map("moliendas_avances_turno")
 }
 
 // ------------------------------------ REFRESH TOKEN

@@ -26,19 +26,19 @@ POST {{baseUrl}}/usuarios
 Content-Type: application/json
 
 {
-  "nombre": "Mario Rosas",
-  "usuario": "pigmento02",
-  "password": "pigmento123",
-  "role": "PIGMENTOS"
+  "nombre": "Gerardo Zuniga",
+  "usuario": "molino02",
+  "password": "nuevaPassword456",
+  "role": "MOLINO"
 }
 
 ### Editar usuario (reemplaza el 2 por el id real que te regresó el create)
-PATCH {{baseUrl}}/usuarios/8
+PATCH {{baseUrl}}/usuarios/3
 Content-Type: application/json
 
 {
-  "nombre": "Jorge Moran Perez",
-  "role": "SUPERVISOR"
+  "nombre": "Gerardo Contreras",
+  "role": "MOLINO"
 }
 
 ### Cambiar contraseña
