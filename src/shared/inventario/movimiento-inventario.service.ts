@@ -8,6 +8,7 @@ import type {
   MovimientoMaterialPigmentadoInput,
   PrismaTransactionClient
 } from "./movimiento-inventario.types.js";
+import { redondear3 } from "../../utils/redondear3.js";
 
 // Calcula el valor con signo real que se guarda en cantidadMovimiento
 function calcularCantidadConSigno(
@@ -38,10 +39,10 @@ export async function registrarMovimientoMateriaPrima(
       throw new Error("INVENTARIO_MATERIA_PRIMA_NO_ENCONTRADO");
     }
 
-    const cantidadAnterior = Number(inventario.cantidadActual);
-    const cantidadMovimiento = calcularCantidadConSigno(input.tipoMovimiento, input.cantidad);
+    const cantidadAnterior = redondear3(Number(inventario.cantidadActual));
+    const cantidadMovimiento = redondear3(calcularCantidadConSigno(input.tipoMovimiento, input.cantidad));
     // + sumara o restara dependiendo el signo con el que devuelva el numero la funcion de arriba (50+50 o 50 + (-50) se transforma en resta)
-    const cantidadNueva = cantidadAnterior + cantidadMovimiento;
+    const cantidadNueva = redondear3(cantidadAnterior + cantidadMovimiento);
 
     // Creamos un nuevo registro en el historial de movimientos
     await tx.historialMovimientoInventario.create({
@@ -94,9 +95,9 @@ export async function registrarMovimientoPigmento(
       throw new Error("INVENTARIO_PIGMENTO_NO_ENCONTRADO");
     }
 
-    const cantidadAnterior = Number(inventario.cantidadActual);
-    const cantidadMovimiento = calcularCantidadConSigno(input.tipoMovimiento, input.cantidad);
-    const cantidadNueva = cantidadAnterior + cantidadMovimiento;
+    const cantidadAnterior = redondear3(Number(inventario.cantidadActual));
+    const cantidadMovimiento = redondear3(calcularCantidadConSigno(input.tipoMovimiento, input.cantidad));
+    const cantidadNueva = redondear3(cantidadAnterior + cantidadMovimiento);
 
     await tx.historialMovimientoInventario.create({
       data: {
@@ -156,9 +157,9 @@ export async function registrarMovimientoProducto(
     });
 
     // Si ya existe, continuamos y hacemos los calculos
-    const cantidadAnterior = Number(inventario.cantidadActual);
-    const cantidadMovimiento = calcularCantidadConSigno(input.tipoMovimiento, input.cantidad);
-    const cantidadNueva = cantidadAnterior + cantidadMovimiento;
+    const cantidadAnterior = redondear3(Number(inventario.cantidadActual));
+    const cantidadMovimiento = redondear3(calcularCantidadConSigno(input.tipoMovimiento, input.cantidad));
+    const cantidadNueva = redondear3(cantidadAnterior + cantidadMovimiento);
 
     await tx.historialMovimientoInventario.create({
       data: {
@@ -226,9 +227,9 @@ export async function registrarMovimientoMolido(
       update: {},
     });
 
-    const cantidadAnterior = Number(inventario.cantidadActual);
-    const cantidadMovimiento = calcularCantidadConSigno(input.tipoMovimiento, input.cantidad);
-    const cantidadNueva = cantidadAnterior + cantidadMovimiento;
+    const cantidadAnterior = redondear3(Number(inventario.cantidadActual));
+    const cantidadMovimiento = redondear3(calcularCantidadConSigno(input.tipoMovimiento, input.cantidad));
+    const cantidadNueva = redondear3(cantidadAnterior + cantidadMovimiento);
 
     await tx.historialMovimientoInventario.create({
       data: {
@@ -303,9 +304,9 @@ export async function registrarMovimientoMaterialPigmentado(
       update: {},
     });
 
-    const cantidadAnterior = Number(inventario.cantidadActual);
-    const cantidadMovimiento = calcularCantidadConSigno(input.tipoMovimiento, input.cantidad);
-    const cantidadNueva = cantidadAnterior + cantidadMovimiento;
+    const cantidadAnterior = redondear3(Number(inventario.cantidadActual));
+    const cantidadMovimiento = redondear3(calcularCantidadConSigno(input.tipoMovimiento, input.cantidad));
+    const cantidadNueva = redondear3(cantidadAnterior + cantidadMovimiento);
 
     await tx.historialMovimientoInventario.create({
       data: {

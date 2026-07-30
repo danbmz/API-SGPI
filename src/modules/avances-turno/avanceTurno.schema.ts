@@ -6,6 +6,11 @@ const turnoTrabajoSchema = Type.Union([
   Type.Literal("NOCHE"),
 ]);
 
+const tipoMaterialSolicitudSchema = Type.Union([
+  Type.Literal("VIRGEN"),
+  Type.Literal("MOLIDO"),
+]);
+
 // ---------- Crear (con estado ABIERTO) ----------
 
 export const crearAvanceTurnoBodySchema = Type.Object({
@@ -40,7 +45,8 @@ export const cerrarAvanceTurnoBodySchema = Type.Object({
   kgMerma: Type.Number({ minimum: 0 }),               
   kgPlasta: Type.Number({ minimum: 0 }),               
   piezasCambioColor: Type.Optional(Type.Integer({ minimum: 0 })), 
-  kgSobrante: Type.Optional(Type.Number({ minimum: 0 })),          
+  kgSobrante: Type.Optional(Type.Number({ minimum: 0 })),  
+  tipoMaterialSobrante: Type.Optional(Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO")])),        
   observaciones: Type.Optional(Type.String({ maxLength: 500 })),   
 });
 
@@ -64,6 +70,41 @@ export const confirmarSobranteBodySchema = Type.Object({
 });
 
 export type ConfirmarSobranteBody = Static<typeof confirmarSobranteBodySchema>;
+
+// ---------- Solicitud de material ----------
+
+export const crearSolicitudMaterialBodySchema = Type.Object({
+  tipoMaterial: tipoMaterialSolicitudSchema,
+  kgSolicitados: Type.Number({ exclusiveMinimum: 0 }),
+  motivo: Type.String({ maxLength: 300 }),
+});
+
+export type CrearSolicitudMaterialBody = Static<typeof crearSolicitudMaterialBodySchema>;
+
+export const solicitudMaterialParamsSchema = Type.Object({ id: Type.String() });
+export type SolicitudMaterialParams = Static<typeof solicitudMaterialParamsSchema>;
+
+export const solicitudMaterialResponseSchema = Type.Object({
+  id: Type.String(),
+  avanceTurnoId: Type.String(),
+  tipoMaterial: tipoMaterialSolicitudSchema,
+  kgSolicitados: Type.Number(),
+  motivo: Type.String(),
+  confirmado: Type.Boolean(),
+  confirmadoPorNombre: Type.Union([Type.String(), Type.Null()]),
+  confirmadoEn: Type.Union([Type.String(), Type.Null()]),
+});
+
+export const listaSolicitudMaterialResponseSchema = Type.Array(solicitudMaterialResponseSchema);
+
+// ---------- Tiempo paro ----------
+
+export const agregarTiempoParoSchema = Type.Object({
+    avanceTurnoId: Type.String(),
+    motivoParoId: Type.String(),
+    minutos: Type.Integer({ exclusiveMinimum: 0}), // No acepta un 0 como valor, siempre debe ser mayor
+    observaciones: Type.Optional(Type.String({maxLength: 500}))
+})
 
 // ---------- Parámetros ----------
 

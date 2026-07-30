@@ -1,0 +1,211 @@
+
+@baseUrl = http://localhost:3000
+
+### ============ SETUP ============
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Crear una orden 100% virgen para probar solicitud tipo VIRGEN
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-SOLI-01",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 500,
+  "clienteDestino": "STOCK"
+}
+
+### Activar la orden (reemplaza el id real)
+PATCH {{baseUrl}}/ordenes/9/activar
+
+### ============ SUPERVISOR: crear avance y solicitud ============
+
+### Login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Crear avance de turno sobre la nueva orden (reemplaza ordenId)
+POST {{baseUrl}}/avances-turno
+Content-Type: application/json
+
+{
+  "ordenId": "9",
+  "turno": "MANANA",
+  "fecha": "2026-07-29",
+  "horaInicio": "2026-07-29T06:00:00Z"
+}
+
+### Ver estado del inventario ANTES de la solicitud, para comparar después
+GET {{baseUrl}}/inventario/materias-primas
+
+###
+GET {{baseUrl}}/inventario/pigmentos
+
+### Crear solicitud de material VIRGEN (reemplaza el id del avance)
+POST {{baseUrl}}/avances-turno/6/solicitudes-material
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "kgSolicitados": 20,
+  "motivo": "Mayor merma de lo estimado, se necesita material adicional"
+}
+
+### Login como Pigmentos
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "pigmento02",
+  "password": "pigmento123"
+}
+
+### Listar solicitudes de ese avance
+GET {{baseUrl}}/avances-turno/6/solicitudes-material
+
+### Intentar crear solicitud sobre un avance que no es propio (usa un avance de otro supervisor si tienes) — debe fallar con 409
+### (omite esta prueba si no tienes un segundo supervisor con avance abierto)
+
+### ============ PIGMENTOS: confirmar solicitud ============
+
+### Confirmar la solicitud (reemplaza el id de la solicitud creada)
+PATCH {{baseUrl}}/solicitudes-material/1/confirmar
+
+### Verificar que el inventario de materia prima Y pigmento bajaron
+GET {{baseUrl}}/inventario/materias-primas
+
+###
+GET {{baseUrl}}/inventario/pigmentos
+
+### Verificar el historial — debe mostrar 2 movimientos con referenciaTipo SOLICITUD_MATERIAL
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=MATERIA_PRIMA&materiaPrimaId=1
+
+###
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=PIGMENTO&pigmentoId=1
+
+### Intentar confirmar la misma solicitud de nuevo — debe fallar con 409
+PATCH {{baseUrl}}/solicitudes-material/1/confirmar
+
+### Confirmar solicitud inexistente — debe fallar con 404
+PATCH {{baseUrl}}/solicitudes-material/9999/confirmar
+
+### ============ CASO MOLIDO ============
+### (requiere una orden con tipoMaterial MEZCLA_* y su inventarioMolidoId — ajusta según tu data real)
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Crear orden con mezcla de molido (ajusta inventarioMolidoId al real que tengas)
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "MEZCLA_RECICLADO",
+  "folio": "OP-2026-SOLI-02",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "2",
+  "maquinaId": "1",
+  "totalPiezas": 500,
+  "inventarioMolidoId": "1",
+  "porcentajeVirgen": 33,
+  "porcentajeMolido": 67,
+  "clienteDestino": "STOCK"
+}
+
+### Activar la orden (ajusta el id real)
+PATCH {{baseUrl}}/ordenes/10/activar
+
+### Login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Crear avance sobre la orden de mezcla (ajusta ordenId)
+POST {{baseUrl}}/avances-turno
+Content-Type: application/json
+
+{
+  "ordenId": "10",
+  "turno": "TARDE",
+  "fecha": "2026-07-29",
+  "horaInicio": "2026-07-29T14:00:00Z"
+}
+
+### Ver inventario de molido ANTES
+GET {{baseUrl}}/inventario/molido
+
+### Crear solicitud de material MOLIDO (ajusta el id del avance)
+POST {{baseUrl}}/avances-turno/7/solicitudes-material
+Content-Type: application/json
+
+{
+  "tipoMaterial": "MOLIDO",
+  "kgSolicitados": 15,
+  "motivo": "Se necesita más molido para completar el turno"
+}
+
+### Login como pigmentos
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "pigmento02",
+  "password": "pigmento123"
+}
+
+### Confirmar la solicitud de molido (ajusta el id)
+PATCH {{baseUrl}}/solicitudes-material/2/confirmar
+
+### Verificar que el inventario de molido bajó
+GET {{baseUrl}}/inventario/molido
+
+### ============ PRUEBA DE PERMISOS ============
+
+### Login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor NO puede confirmar solicitudes — debe fallar con 403
+PATCH {{baseUrl}}/solicitudes-material/1/confirmar
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

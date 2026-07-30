@@ -7,6 +7,9 @@ import {
   cerrarAvanceTurno,
   confirmarMolino,
   confirmarSobrante,
+  crearSolicitudMaterial,
+  confirmarSolicitudMaterial,
+  listarSolicitudesMaterial,
 } from "./avanceTurno.service.js";
 import {
   crearAvanceTurnoBodySchema,
@@ -18,6 +21,11 @@ import {
   avanceTurnoResponseSchema,
   listaAvanceTurnoResponseSchema,
   errorResponseSchema,
+  crearSolicitudMaterialBodySchema,
+  solicitudMaterialResponseSchema,
+  solicitudMaterialParamsSchema,
+  okResponseSchema,
+  listaSolicitudMaterialResponseSchema,
 } from "./avanceTurno.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -37,6 +45,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
   app.register(async function supervisorRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
     app.addHook("preHandler", app.authorize(["SUPERVISOR"]));
 
+    // Crear avance
     app.post(
       "/avances-turno",
       {
@@ -56,6 +65,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
       }
     );
 
+    // Guardar borrador
     app.patch(
       "/avances-turno/:id",
       {
@@ -81,6 +91,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
       }
     );
 
+    // Cerrar avance
     app.patch(
       "/avances-turno/:id/cerrar",
       {
@@ -105,12 +116,43 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
         }
       }
     );
+
+    // Generar una solicitud de material
+    app.post(
+      "/avances-turno/:id/solicitudes-material",
+      {
+          schema: {
+          params: avanceTurnoParamsSchema,
+          body: crearSolicitudMaterialBodySchema,
+          response: {
+              201: solicitudMaterialResponseSchema,
+              404: errorResponseSchema,
+              409: errorResponseSchema,
+          },
+          },
+      },
+      async (request, reply) => {
+          try {
+            const solicitud = await crearSolicitudMaterial(
+              BigInt(request.params.id),
+              request.body,
+              request.authUser!,
+              request.ip
+          );
+            return reply.code(201).send(solicitud);
+          } catch (err) {
+            if (manejarErrorConocido(err, reply)) return;
+            throw err;
+          }
+      }
+    );
   });
 
   // Exclusivo de MOLINO
   app.register(async function molinoRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
     app.addHook("preHandler", app.authorize(["MOLINO"]));
 
+    // Confirma las entradas de merma a Molino
     app.patch(
       "/avances-turno/:id/confirmar-molino",
       {
@@ -141,6 +183,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
   app.register(async function pigmentosRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
     app.addHook("preHandler", app.authorize(["PIGMENTOS"]));
 
+    // Confirma los kG sobrantes de un avance
     app.patch(
       "/avances-turno/:id/confirmar-sobrante",
       {
@@ -165,5 +208,40 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
         }
       }
     );
+
+    // Lista todas las solicitudes de material
+    app.get(
+    "/avances-turno/:id/solicitudes-material",
+        {
+            schema: {
+            params: avanceTurnoParamsSchema,
+            response: { 200: listaSolicitudMaterialResponseSchema, 404: errorResponseSchema },
+            },
+        },
+        async (request, reply) => {
+            return reply.send(await listarSolicitudesMaterial(BigInt(request.params.id)));
+        }
+    );
+
+    // Confirmar salida de material solicitado
+    app.patch(
+      "/solicitudes-material/:id/confirmar",
+      {
+        schema: {
+          params: solicitudMaterialParamsSchema,
+          response: { 200: okResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema },
+        },
+      },
+      async (request, reply) => {
+        try {
+          await confirmarSolicitudMaterial(BigInt(request.params.id), request.authUser!, request.ip);
+          return reply.send({ ok: true });
+      } catch (err) {
+          if (manejarErrorConocido(err, reply)) return;
+        throw err;
+    }
+    }
+    );
+
   });
 }

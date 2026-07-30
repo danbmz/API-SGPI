@@ -58,7 +58,12 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   AVANCE_TURNO_YA_CONFIRMADO_MOLINO: {code: 409, message: "Este avance ya ha sido confirmado"},
   AVANCE_TURNO_SIN_SOBRANTE: {code: 409, message: "No hay material sobrante de este avance"},
   SOBRANTE_YA_CONFIRMADO: {code: 409, message: "El sobrante de este avance ya ha sido confirmado"},
-  ORDEN_YA_TIENE_AVANCE_ABIERTO: {code: 409, message: "Esta orden ya se esta trabajando"}
+  ORDEN_YA_TIENE_AVANCE_ABIERTO: {code: 409, message: "Esta orden ya se esta trabajando"},
+  TIPO_MATERIAL_SOBRANTE_REQUERIDO: {code: 409, message: "Indica el tipo de material que sobró"},
+  // ERRORES DE ENCARGADO PIGMENTO
+  SOLICITUD_MATERIAL_NO_ENCONTRADA: {code: 404, message: "Solicitud no encontrada"},
+  SOLICITUD_MATERIAL_YA_CONFIRMADA: {code: 409, message: "Esta solicitud ya ha sido confirmada"},
+  ORDEN_SIN_MOLIDO_ASIGNADO: {code: 409, message: "Se solicita molido, pero la orden no indica qué tipo de molido usar"}
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

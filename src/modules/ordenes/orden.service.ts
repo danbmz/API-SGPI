@@ -8,6 +8,7 @@ import type { PrismaTransactionClient } from "../../shared/inventario/movimiento
 import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import type { AuthUser } from "../../types/fastify.js";
 import type { CrearOrdenBody, CancelarOrdenBody } from "./orden.schema.js";
+import { redondear3 } from "../../utils/redondear3.js";
 
 const FACTOR_COLCHON = 1.05;
 
@@ -94,15 +95,15 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
   const tiempoEstimadoHrs = data.totalPiezas / piezasPorHora;
 
   const materiaPrimaTotalKg =
-    ((data.totalPiezas * Number(producto.peso)) / 1000) * FACTOR_COLCHON;
+    redondear3(((data.totalPiezas * Number(producto.peso)) / 1000) * FACTOR_COLCHON);
 
   const porcentajeVirgen = data.tipoMaterial === "VIRGEN" ? 100 : data.porcentajeVirgen;
   const porcentajeMolido = data.tipoMaterial === "VIRGEN" ? 0 : data.porcentajeMolido;
 
-  const materiaPrimaVirgenKg = materiaPrimaTotalKg * (porcentajeVirgen / 100);
-  const materialMolidoKg = materiaPrimaTotalKg * (porcentajeMolido / 100);
+  const materiaPrimaVirgenKg = redondear3(materiaPrimaTotalKg * (porcentajeVirgen / 100));
+  const materialMolidoKg = redondear3(materiaPrimaTotalKg * (porcentajeMolido / 100));
 
-  const pigmentoRequeridoKg = (materiaPrimaVirgenKg * Number(pigmento.dosisGrPorKg)) / 1000;
+  const pigmentoRequeridoKg = redondear3((materiaPrimaVirgenKg * Number(pigmento.dosisGrPorKg)) / 1000);
 
   // ---------- Validación de stock ----------
   const inventarioMateriaPrima = await prisma.inventarioMateriaPrima.findUnique({

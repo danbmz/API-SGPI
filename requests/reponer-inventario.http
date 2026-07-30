@@ -1,0 +1,116 @@
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### ============ REVISAR ESTADO ACTUAL ============
+
+### Ver stock actual de materias primas
+GET {{baseUrl}}/inventario/materias-primas
+
+### Ver stock actual de pigmentos
+GET {{baseUrl}}/inventario/pigmentos
+
+### Ver stock actual de molido
+GET {{baseUrl}}/inventario/molido
+
+### ============ ENTRADA DE PROVEEDOR (reposición grande) ============
+
+### Entrada de materia prima — Polipropileno (ajusta materiaPrimaId)
+POST {{baseUrl}}/inventario/entrada-proveedor
+Content-Type: application/json
+
+{
+  "tipoInventario": "MATERIA_PRIMA",
+  "materiaPrimaId": "1",
+  "cantidad": 2000,
+  "descripcion": "Reposición de stock para pruebas"
+}
+
+### Entrada de materia prima — Poliestireno-Cristal (ajusta materiaPrimaId)
+POST {{baseUrl}}/inventario/entrada-proveedor
+Content-Type: application/json
+
+{
+  "tipoInventario": "MATERIA_PRIMA",
+  "materiaPrimaId": "2",
+  "cantidad": 1000,
+  "descripcion": "Reposición de stock para pruebas"
+}
+
+### Entrada de pigmento — Amarillo (ajusta pigmentoId)
+POST {{baseUrl}}/inventario/entrada-proveedor
+Content-Type: application/json
+
+{
+  "tipoInventario": "PIGMENTO",
+  "pigmentoId": "1",
+  "cantidad": 100,
+  "descripcion": "Reposición de stock para pruebas"
+}
+
+### Entrada de pigmento — Rojo (ajusta pigmentoId)
+POST {{baseUrl}}/inventario/entrada-proveedor
+Content-Type: application/json
+
+{
+  "tipoInventario": "PIGMENTO",
+  "pigmentoId": "2",
+  "cantidad": 100,
+  "descripcion": "Reposición de stock para pruebas"
+}
+
+### Entrada de molido comprado (ajusta materiaPrimaId y colorSolidoId)
+POST {{baseUrl}}/inventario/entrada-proveedor
+Content-Type: application/json
+
+{
+  "tipoInventario": "MOLIDO",
+  "materiaPrimaId": "1",
+  "colorSolidoId": "1",
+  "cantidad": 500,
+  "descripcion": "Reposición de molido comprado para pruebas"
+}
+
+### ============ AJUSTE MANUAL (si prefieres un número exacto en vez de sumar) ============
+
+### Ajuste manual — fijar materia prima a un valor específico
+### (calcula la diferencia entre lo que quieres y lo que ya tienes, y usa ese número con signo)
+POST {{baseUrl}}/inventario/ajuste-manual
+Content-Type: application/json
+
+{
+  "tipoInventario": "MATERIA_PRIMA",
+  "materiaPrimaId": "1",
+  "diferencia": 500,
+  "descripcion": "Ajuste para dejar stock disponible en pruebas"
+}
+
+### Ajuste manual — pigmento
+POST {{baseUrl}}/inventario/ajuste-manual
+Content-Type: application/json
+
+{
+  "tipoInventario": "PIGMENTO",
+  "pigmentoId": "1",
+  "diferencia": 20,
+  "descripcion": "Ajuste para dejar stock disponible en pruebas"
+}
+
+### ============ VERIFICAR RESULTADO ============
+
+### Confirmar los nuevos totales
+GET {{baseUrl}}/inventario/materias-primas
+
+###
+GET {{baseUrl}}/inventario/pigmentos
+
+###
+GET {{baseUrl}}/inventario/molido

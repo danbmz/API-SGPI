@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
-import { registrarMovimientoProducto } from "../../shared/inventario/movimiento-inventario.service.js";
+import { registrarMovimientoMaterialPigmentado, registrarMovimientoMateriaPrima, registrarMovimientoMolido, registrarMovimientoPigmento, registrarMovimientoProducto } from "../../shared/inventario/movimiento-inventario.service.js";
 import type { PrismaTransactionClient } from "../../shared/inventario/movimiento-inventario.types.js";
 import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import type { AuthUser } from "../../types/fastify.js";
@@ -9,6 +9,7 @@ import type {
   CerrarAvanceTurnoBody,
   ConfirmarMolinoBody,
   ConfirmarSobranteBody,
+  CrearSolicitudMaterialBody,
 } from "./avanceTurno.schema.js";
 
 const includeCompleto = {
@@ -40,6 +41,19 @@ function serializar(avance: any) {
   };
 }
 
+function serializarSolicitud(solicitud: any) {
+  return {
+    id: solicitud.id.toString(),
+    avanceTurnoId: solicitud.avanceTurnoId.toString(),
+    tipoMaterial: solicitud.tipoMaterial,
+    kgSolicitados: Number(solicitud.kgSolicitados),
+    motivo: solicitud.motivo,
+    confirmado: solicitud.confirmado,
+    confirmadoPorNombre: solicitud.confirmadoPor ? solicitud.confirmadoPor.nombre : null,
+    confirmadoEn: solicitud.confirmadoEn ? solicitud.confirmadoEn.toISOString() : null,
+  };
+}
+
 export async function listarAvancesTurno(actor: AuthUser) {
   // El supervisor solo ve sus propios avances; otros roles ven todos.
   const where = actor.role === "SUPERVISOR" ? { supervisorId: actor.id } : {};
@@ -51,6 +65,15 @@ export async function listarAvancesTurno(actor: AuthUser) {
   });
 
   return avances.map(serializar);
+}
+
+export async function listarSolicitudesMaterial(avanceTurnoId: bigint) {
+  const solicitudes = await prisma.solicitudMaterial.findMany({
+    where: { avanceTurnoId },
+    include: { confirmadoPor: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return solicitudes.map(serializarSolicitud);
 }
 
 export async function crearAvanceTurno(data: CrearAvanceTurnoBody, actor: AuthUser, ip?: string) {
@@ -158,7 +181,10 @@ export async function cerrarAvanceTurno(
   if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
   if (avance.supervisorId !== actor.id) throw new Error("AVANCE_TURNO_NO_PROPIO");
   if (avance.estado !== "ABIERTO") throw new Error("AVANCE_TURNO_YA_CERRADO");
-
+  // Comprobamos que venga el valor del tipo de material que se devolvera a inventario  
+  if (data.kgSobrante !== undefined && data.kgSobrante > 0 && data.tipoMaterialSobrante === undefined) {
+    throw new Error("TIPO_MATERIAL_SOBRANTE_REQUERIDO");
+  }
 
   const resultado = await prisma.$transaction(async (tx) => {
     await tx.avanceTurno.update({
@@ -289,26 +315,76 @@ export async function confirmarMolino(
   return serializar(actualizado);
 }
 
+// Se confirma lo reportado por el supervisor y se generan las entradas a inventario
 export async function confirmarSobrante(
   id: bigint,
   data: ConfirmarSobranteBody,
   actor: AuthUser,
   ip?: string
 ) {
-  const avance = await prisma.avanceTurno.findUnique({ where: { id } });
+  const avance = await prisma.avanceTurno.findUnique({ where: { id }, include: { orden: true} });
   if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
   if (avance.kgSobrante === null) throw new Error("AVANCE_TURNO_SIN_SOBRANTE");
   if (avance.sobranteConfirmado) throw new Error("SOBRANTE_YA_CONFIRMADO");
 
-  const actualizado = await prisma.avanceTurno.update({
-    where: { id },
-    data: {
-      sobranteConfirmado: data.confirmado,
-      sobranteConfirmadoPorId: actor.id,
-      sobranteConfirmadoEn: new Date(),
-    },
-    include: includeCompleto,
-  });
+  // Una sola transaccion, actualizamos avanceTurno y registramos movimientos en inventario (molino o pigmentado)
+  const confirmado = await prisma.$transaction( async (tx) => {
+    const actualizado = await tx.avanceTurno.update({
+        where: { id },
+        data: {
+        sobranteConfirmado: data.confirmado,
+        sobranteConfirmadoPorId: actor.id,
+        sobranteConfirmadoEn: new Date(),
+        },
+        include: includeCompleto,
+    });
+
+    // Validamos qué material se esta regresando para saber sobre que material haremos el movimiento
+    if(avance.tipoMaterialSobrante === "VIRGEN") {
+        // Ya no regresa como material virgen 100% ya esta mezclado con pigmento
+        await registrarMovimientoMaterialPigmentado(
+            {
+                tipoMovimiento: "ENTRADA",
+                motivo: "SUSTITUCION_MATERIAL_PIGMENTADO",
+                cantidad: Number(avance.kgSobrante),
+                usuarioId: actor.id,
+                referenciaTipo: "AVANCE_TURNO",
+                referenciaId: actualizado.id,
+                materiaPrimaId: avance.orden.materiaPrimaId,
+                pigmentoId: avance.orden.pigmentoId,
+            },
+            tx as unknown as PrismaTransactionClient
+        )
+
+    } else {
+        // MOLIDO: la orden ya tiene fija la fila de inventario de molido
+        if (!avance.orden.inventarioMolidoId) {
+            throw new Error("ORDEN_SIN_MOLIDO_ASIGNADO");
+        }
+
+        const inventarioMolido = await tx.inventarioMolido.findUniqueOrThrow({
+            where: { id: avance.orden.inventarioMolidoId },
+        });
+
+        await registrarMovimientoMolido(
+            {
+            materiaPrimaId: inventarioMolido.materiaPrimaId,
+            origen: inventarioMolido.origen,
+            colorSolidoId: inventarioMolido.colorSolidoId,
+            tipoMovimiento: "SALIDA",
+            motivo: "CONSUMO_PRODUCCION",
+            cantidad: Number(avance.kgSobrante),
+            usuarioId: actor.id,
+            referenciaTipo: "SOLICITUD_MATERIAL",
+            referenciaId: id,
+            },
+            tx as unknown as PrismaTransactionClient
+        );
+    }
+
+
+    return actualizado;
+  })
 
   await registrarAccion({
     usuarioId: actor.id,
@@ -321,5 +397,133 @@ export async function confirmarSobrante(
     ...(ip !== undefined && { ip }),
   });
 
-  return serializar(actualizado);
+  return serializar(confirmado);
+}
+
+export async function crearSolicitudMaterial(
+  avanceTurnoId: bigint,
+  data: CrearSolicitudMaterialBody,
+  actor: AuthUser,
+  ip?: string
+) {
+  const avance = await prisma.avanceTurno.findUnique({
+    where: { id: avanceTurnoId },
+    include: { orden: true },
+  });
+  if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
+  if (avance.supervisorId !== actor.id) throw new Error("AVANCE_TURNO_NO_PROPIO");
+  if (avance.estado !== "ABIERTO") throw new Error("AVANCE_TURNO_YA_CERRADO");
+
+  if (data.tipoMaterial === "MOLIDO" && !avance.orden.inventarioMolidoId) {
+    throw new Error("ORDEN_SIN_MOLIDO_ASIGNADO");
+  }
+
+  const nueva = await prisma.solicitudMaterial.create({
+    data: {
+      avanceTurnoId,
+      tipoMaterial: data.tipoMaterial,
+      kgSolicitados: data.kgSolicitados,
+      motivo: data.motivo,
+    },
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "crear_solicitud_material",
+    entidad: "solicitud_material",
+    entidadId: nueva.id,
+    ...(ip !== undefined && { ip }),
+  });
+
+  return serializarSolicitud(nueva);
+}
+
+
+export async function confirmarSolicitudMaterial(id: bigint, actor: AuthUser, ip?: string) {
+  const solicitud = await prisma.solicitudMaterial.findUnique({
+    where: { id },
+    include: { avanceTurno: { include: { orden: { include: { pigmento: true } } } } },
+  });
+  if (!solicitud) throw new Error("SOLICITUD_MATERIAL_NO_ENCONTRADA");
+  if (solicitud.confirmado) throw new Error("SOLICITUD_MATERIAL_YA_CONFIRMADA");
+
+  const orden = solicitud.avanceTurno.orden;
+  const kgSolicitados = Number(solicitud.kgSolicitados);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.solicitudMaterial.update({
+      where: { id },
+      data: { confirmado: true, confirmadoPorId: actor.id, confirmadoEn: new Date() },
+    });
+
+    if (solicitud.tipoMaterial === "VIRGEN") {
+      // Salida de materia prima virgen
+      await registrarMovimientoMateriaPrima(
+        {
+          materiaPrimaId: orden.materiaPrimaId,
+          tipoMovimiento: "SALIDA",
+          motivo: "CONSUMO_PRODUCCION",
+          cantidad: kgSolicitados,
+          usuarioId: actor.id,
+          referenciaTipo: "SOLICITUD_MATERIAL",
+          referenciaId: id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+
+      // Salida de pigmento correspondiente, calculada con la misma dosis de la orden
+      const kgPigmento = (kgSolicitados * Number(orden.pigmento.dosisGrPorKg)) / 1000;
+
+      await registrarMovimientoPigmento(
+        {
+          pigmentoId: orden.pigmentoId,
+          tipoMovimiento: "SALIDA",
+          motivo: "CONSUMO_PRODUCCION",
+          cantidad: kgPigmento,
+          usuarioId: actor.id,
+          referenciaTipo: "SOLICITUD_MATERIAL",
+          referenciaId: id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    } else {
+        // MOLIDO: la orden ya tiene fija la fila de inventario de molido
+        if (!orden.inventarioMolidoId) {
+            throw new Error("ORDEN_SIN_MOLIDO_ASIGNADO");
+        }
+
+        const inventarioMolido = await tx.inventarioMolido.findUniqueOrThrow({
+            where: { id: orden.inventarioMolidoId },
+        });
+
+        await registrarMovimientoMolido(
+            {
+            materiaPrimaId: inventarioMolido.materiaPrimaId,
+            origen: inventarioMolido.origen,
+            colorSolidoId: inventarioMolido.colorSolidoId,
+            tipoMovimiento: "SALIDA",
+            motivo: "CONSUMO_PRODUCCION",
+            cantidad: kgSolicitados,
+            usuarioId: actor.id,
+            referenciaTipo: "SOLICITUD_MATERIAL",
+            referenciaId: id,
+            },
+            tx as unknown as PrismaTransactionClient
+        );
+    }
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "PIGMENTOS",
+    accion: "confirmar_material_preparado",
+    entidad: "solicitud_material",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
+  });
 }

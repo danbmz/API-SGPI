@@ -93,7 +93,8 @@ model AuditLog {
 
 enum TipoMaterial {
   POLIPROPILENO
-  POLIESTIRENO_CRISTAL
+  POLIESTIRENO
+  POLIETILENO
 }
 
 enum UnidadMedida {
@@ -119,15 +120,9 @@ model MateriaPrima {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  pigmentos          Pigmento[]
-  productos          Producto[]
   inventarioVirgen  InventarioMateriaPrima?
-  inventarioMolido  InventarioMolido[]
   ordenesProduccion OrdenProduccion[] @relation("OrdenMateriaPrimaVirgen")
-  moliendas Molienda[]
-  materialPigmentado  CombinacionMaterialPigmentado[]
   movimientosVirgen HistorialMovimientoInventario[] @relation("MovimientoMateriaPrimaVirgen")
-  movimientosMolido HistorialMovimientoInventario[] @relation("MovimientoMaterialMolido")
 
   @@map("materias_primas")
 }
@@ -172,8 +167,7 @@ enum OrigenMolido {
 model InventarioMolido {
   id             BigInt       @id @default(autoincrement())
 
-  materiaPrimaId BigInt
-  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+  tipoMaterial   TipoMaterial
 
   origen         OrigenMolido
   colorSolidoId  BigInt
@@ -185,7 +179,7 @@ model InventarioMolido {
 
   ordenesProduccion OrdenProduccion[]
 
-  @@unique([materiaPrimaId, origen, colorSolidoId])
+  @@unique([tipoMaterial, origen, colorSolidoId])
   @@map("inventario_molido")
 }
 
@@ -212,8 +206,7 @@ model Pigmento {
 
   dosisGrPorKg    Decimal                @db.Decimal(10,3)
 
-  materiaPrimaId  BigInt
-  materiaPrima    MateriaPrima           @relation(fields: [materiaPrimaId], references: [id])
+  tipoMaterial    TipoMaterial           // ← antes: materiaPrimaId BigInt + relación
 
   activo          Boolean                @default(true)
   createdAt       DateTime               @default(now())
@@ -226,7 +219,7 @@ model Pigmento {
   movimientosInventario HistorialMovimientoInventario[]
   movimientosProducto HistorialMovimientoInventario[] @relation("MovimientoColorProducto")
 
-  @@unique([materiaPrimaId, color, categoriaColor, tipo])
+  @@unique([tipoMaterial, color, categoriaColor, tipo])
   @@map("pigmentos")
 }
 
@@ -249,8 +242,7 @@ model InventarioPigmento {
 model CombinacionMaterialPigmentado {
   id             BigInt       @id @default(autoincrement())
 
-  materiaPrimaId BigInt
-  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+  tipoMaterial   TipoMaterial     // sin relacion 1:N con MaterioPrima o si deberia tener?
 
   pigmentoId     BigInt
   pigmento       Pigmento     @relation(fields: [pigmentoId], references: [id])
@@ -260,7 +252,7 @@ model CombinacionMaterialPigmentado {
   inventario     InventarioMaterialPigmentado?
   movimientosMaterialPigmentado  HistorialMovimientoInventario[]
 
-  @@unique([materiaPrimaId, pigmentoId])
+  @@unique([tipoMaterial, pigmentoId])
   @@map("combinaciones_material_pigmentado")
 }
 
@@ -285,12 +277,13 @@ model Producto {
   codigo         String       @unique
   tipo           String
 
-  materiaPrimaId BigInt
-  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+  piezasPorEmpaque    Int
+  descripcion         String    
 
   cavidades      Int
   ciclo          Int          // segundos
   peso           Decimal      @db.Decimal(10,2) // gramos
+  precio         Decimal      @db.Decimal(10,2) // precio
 
   activo         Boolean      @default(true)
   createdAt      DateTime     @default(now())
@@ -458,6 +451,11 @@ enum EstadoAvanceTurno {
   CERRADO
 }
 
+enum TipoMaterialSolicitud {
+  VIRGEN
+  MOLIDO
+}
+
 model AvanceTurno {
   id            BigInt   @id @default(autoincrement())
 
@@ -484,6 +482,7 @@ model AvanceTurno {
   // Solo se llena si el supervisor reporta sobrante explícitamente en el form.
   // NULL = no hubo sobrante (implícito, nada que confirmar).
   kgSobrante              Decimal?  @db.Decimal(10,3)
+  tipoMaterialSobrante    TipoMaterialSolicitud?
   sobranteConfirmado      Boolean   @default(false)
   sobranteConfirmadoPorId BigInt?
   sobranteConfirmadoPor   Usuario?  @relation("SobranteConfirmadoPor", fields: [sobranteConfirmadoPorId], references: [id])
@@ -535,6 +534,8 @@ model SolicitudMaterial {
   avanceTurnoId  BigInt
   avanceTurno    AvanceTurno @relation(fields: [avanceTurnoId], references: [id])
 
+  tipoMaterial   TipoMaterialSolicitud 
+
   kgSolicitados  Decimal  @db.Decimal(10,3)
   motivo         String
 
@@ -553,8 +554,7 @@ model SolicitudMaterial {
 model Molienda {
   id              BigInt      @id @default(autoincrement())
 
-  materiaPrimaId  BigInt
-  materiaPrima    MateriaPrima @relation(fields: [materiaPrimaId], references: [id])
+  tipoMaterial    TipoMaterial
 
   colorSolidoId   BigInt
   colorSolido     ColorSolido @relation("MoliendaColor", fields: [colorSolidoId], references: [id])
@@ -672,8 +672,7 @@ model HistorialMovimientoInventario {
   combinacionMaterialPigmentadoId BigInt?
   combinacionMaterialPigmentado   CombinacionMaterialPigmentado? @relation(fields: [combinacionMaterialPigmentadoId], references: [id])
 
-  materialMolidoId   BigInt?
-  materialMolido     MateriaPrima? @relation("MovimientoMaterialMolido", fields: [materialMolidoId], references: [id])
+  materialMolidoTipo     TipoMaterial?
   origenMolido     OrigenMolido?
   colorSolidoId    BigInt?
   colorSolido      ColorSolido? @relation("MovimientoColorSolido", fields: [colorSolidoId], references: [id])
@@ -696,7 +695,7 @@ model HistorialMovimientoInventario {
   @@index([tipoInventario, pigmentoId])
   @@index([tipoInventario, productoId])
   @@index([tipoInventario, pigmentoProductoId])
-  @@index([tipoInventario, materialMolidoId])
+  @@index([tipoInventario, materialMolidoTipo])
   @@index([tipoInventario, combinacionMaterialPigmentadoId])
   @@index([motivo])
   @@index([referenciaTipo, referenciaId])
