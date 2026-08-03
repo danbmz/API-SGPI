@@ -30,7 +30,7 @@ export async function listarInventarioMateriaPrima() {
 
 export async function listarInventarioPigmento() {
   const registros = await prisma.inventarioPigmento.findMany({
-    include: { pigmento: { include: { materiaPrima: true } } },
+    include: { pigmento: true },
     orderBy: { pigmento: { color: "asc" } },
   });
 
@@ -39,7 +39,7 @@ export async function listarInventarioPigmento() {
     color: r.pigmento.color,
     categoriaColor: r.pigmento.categoriaColor,
     tipo: r.pigmento.tipo,
-    materiaPrimaNombre: r.pigmento.materiaPrima.nombre,
+    tipoMaterial: r.pigmento.tipoMaterial,
     cantidadActual: Number(r.cantidadActual),
     stockMinimo: Number(r.stockMinimo),
   }));
@@ -63,13 +63,11 @@ export async function listarInventarioProducto() {
 
 export async function listarInventarioMolido() {
   const registros = await prisma.inventarioMolido.findMany({
-    include: { materiaPrima: true, colorSolido: true },
-    orderBy: { materiaPrima: { nombre: "asc" } },
+    include: { colorSolido: true }
   });
 
   return registros.map((r) => ({
-    materiaPrimaId: r.materiaPrimaId.toString(),
-    materiaPrimaNombre: r.materiaPrima.nombre,
+    tipoMaterial: r.tipoMaterial,
     origen: r.origen,
     colorSolidoId: r.colorSolidoId.toString(),
     colorSolidoNombre: r.colorSolido.nombre,
@@ -79,7 +77,7 @@ export async function listarInventarioMolido() {
 
 export async function listarInventarioMaterialPigmentado() {
   const registros = await prisma.inventarioMaterialPigmentado.findMany({
-    include: { combinacion: { include: { materiaPrima: true, pigmento: true } } },
+    include: { combinacion: { include: { materiaPrima: true, pigmento: true  } } },
     orderBy: { combinacion: { materiaPrima: { nombre: "asc" } } },
   });
 
@@ -125,18 +123,18 @@ export async function registrarEntradaProveedor(
     }
 
     case "MOLIDO": {
-      const materiaPrimaId = BigInt(data.materiaPrimaId);
+      const tipoMaterial = data.tipoMaterial;
       const colorSolidoId = BigInt(data.colorSolidoId);
 
-      const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
-      if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
+      // const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
+      // if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
 
       const color = await prisma.colorSolido.findUnique({ where: { id: colorSolidoId } });
       if (!color) throw new Error("COLOR_SOLIDO_NO_ENCONTRADO");
 
       return registrarMovimientoMolido({
         ...base,
-        materiaPrimaId,
+        tipoMaterial,
         origen: "COMPRADO", // entrada de proveedor de molido siempre es comprado, nunca interno
         colorSolidoId,
       });
@@ -190,18 +188,15 @@ export async function registrarAjusteManual(
     }
 
     case "MOLIDO": {
-      const materiaPrimaId = BigInt(data.materiaPrimaId);
+      const tipoMaterial = data.tipoMaterial;
       const colorSolidoId = BigInt(data.colorSolidoId);
-
-      const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
-      if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
 
       const color = await prisma.colorSolido.findUnique({ where: { id: colorSolidoId } });
       if (!color) throw new Error("COLOR_SOLIDO_NO_ENCONTRADO");
 
       return registrarMovimientoMolido({
         ...base,
-        materiaPrimaId,
+        tipoMaterial,
         origen: data.origen,
         colorSolidoId,
       });
@@ -210,9 +205,6 @@ export async function registrarAjusteManual(
     case "MATERIAL_PIGMENTADO": {
       const materiaPrimaId = BigInt(data.materiaPrimaId);
       const pigmentoId = BigInt(data.pigmentoId);
-
-      const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
-      if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
 
       const pigmento = await prisma.pigmento.findUnique({ where: { id: pigmentoId } });
       if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");

@@ -24,7 +24,7 @@ Content-Type: application/json
   "categoriaColor": "SOLIDO",
   "tipo": "MASTER",
   "dosisGrPorKg": 21,
-  "materiaPrimaId": "1",
+  "tipoMaterial": "POLIPROPILENO",
   "stockMinimo": 5
 }
 
@@ -33,11 +33,11 @@ POST {{baseUrl}}/pigmentos
 Content-Type: application/json
 
 {
-  "color": "Rojo",
-  "categoriaColor": "SOLIDO",
-  "tipo": "MASTER",
-  "dosisGrPorKg": 8,
-  "materiaPrimaId": "1",
+  "color": "Naranja",
+  "categoriaColor": "NEON_TRASLUCIDO",
+  "tipo": "POLVO",
+  "dosisGrPorKg": 6,
+  "tipoMaterial": "POLIESTIRENO",
   "stockMinimo": 5
 }
 
@@ -63,7 +63,7 @@ Content-Type: application/json
   "categoriaColor": "SOLIDO",
   "tipo": "MASTER",
   "dosisGrPorKg": 21,
-  "materiaPrimaId": "9999",
+  "tipoMaterial": "POLI",
   "stockMinimo": 0
 }
 
@@ -116,7 +116,7 @@ Content-Type: application/json
   "categoriaColor": "SOLIDO",
   "tipo": "MASTER",
   "dosisGrPorKg": 22,
-  "materiaPrimaId": "1",
+  "tipoMaterial": "POLIPROPILENO",
   "stockMinimo": 0
 }
 

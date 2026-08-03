@@ -55,7 +55,7 @@ export async function registrarMovimientoMateriaPrima(
         cantidadAnterior,
         cantidadMovimiento,
         cantidadNueva,
-        unidadMedida: inventario.materiaPrima.unidadMedida,
+        unidadMedida: "KILOGRAMO",
         usuarioId: input.usuarioId,
         ...(input.descripcion !== undefined && { descripcion: input.descripcion }),
         ...(input.referenciaTipo !== undefined && { referenciaTipo: input.referenciaTipo }),
@@ -88,7 +88,7 @@ export async function registrarMovimientoPigmento(
     // El doble include indica que traiga el registro de materiaPrima relacionado a Pigmento que a su vez esta relacionado a InventarioPigmento.
     const inventario = await tx.inventarioPigmento.findUnique({
       where: { pigmentoId: input.pigmentoId },
-      include: { pigmento: { include: { materiaPrima: true } } },
+      include: { pigmento: true },
     });
 
     if (!inventario) {
@@ -108,7 +108,7 @@ export async function registrarMovimientoPigmento(
         cantidadAnterior,
         cantidadMovimiento,
         cantidadNueva,
-        unidadMedida: inventario.pigmento.materiaPrima.unidadMedida,
+        unidadMedida: "KILOGRAMO",
         usuarioId: input.usuarioId,
         ...(input.descripcion !== undefined && { descripcion: input.descripcion }),
         ...(input.referenciaTipo !== undefined && { referenciaTipo: input.referenciaTipo }),
@@ -203,23 +203,17 @@ export async function registrarMovimientoMolido(
   txExterna?: PrismaTransactionClient
 ) {
   const ejecutar = async (tx: PrismaTransactionClient) => {
-    // Capa de seguridad, si no existe la materia prima, no deberia poder existir un registro de inventario
-    const materiaPrima = await tx.materiaPrima.findUnique({
-      where: { id: input.materiaPrimaId },
-    });
-    // Asi controlamos un posible error desconocido de FK constraint (materiaPrimaId es FK de inventarioMolido)
-    if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
 
     const inventario = await tx.inventarioMolido.upsert({
       where: {
-        materiaPrimaId_origen_colorSolidoId: {
-          materiaPrimaId: input.materiaPrimaId,
+        tipoMaterial_origen_colorSolidoId: {
+          tipoMaterial: input.tipoMaterial,
           origen: input.origen,
           colorSolidoId: input.colorSolidoId,
         },
       },
       create: {
-        materiaPrimaId: input.materiaPrimaId,
+        tipoMaterial: input.tipoMaterial,
         origen: input.origen,
         colorSolidoId: input.colorSolidoId,
         cantidadActual: 0,
@@ -236,13 +230,13 @@ export async function registrarMovimientoMolido(
         tipoInventario: "MOLIDO",
         tipoMovimiento: input.tipoMovimiento,
         motivo: input.motivo,
-        materialMolidoId: input.materiaPrimaId,
+        materialMolidoTipo: input.tipoMaterial,
         origenMolido: input.origen,
         colorSolidoId: input.colorSolidoId,
         cantidadAnterior,
         cantidadMovimiento,
         cantidadNueva,
-        unidadMedida: materiaPrima.unidadMedida,
+        unidadMedida: "KILOGRAMO",
         usuarioId: input.usuarioId,
         ...(input.descripcion !== undefined && { descripcion: input.descripcion }),
         ...(input.referenciaTipo !== undefined && { referenciaTipo: input.referenciaTipo }),
@@ -252,8 +246,8 @@ export async function registrarMovimientoMolido(
 
     return tx.inventarioMolido.update({
       where: {
-        materiaPrimaId_origen_colorSolidoId: {
-          materiaPrimaId: input.materiaPrimaId,
+        tipoMaterial_origen_colorSolidoId: {
+          tipoMaterial: input.tipoMaterial,
           origen: input.origen,
           colorSolidoId: input.colorSolidoId,
         },
@@ -277,6 +271,7 @@ export async function registrarMovimientoMaterialPigmentado(
   txExterna?: PrismaTransactionClient
 ) {
   const ejecutar = async (tx:PrismaTransactionClient) => {
+
     const materiaPrima = await tx.materiaPrima.findUnique({
       where: { id: input.materiaPrimaId },
     });

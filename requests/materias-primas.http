@@ -35,7 +35,7 @@ Content-Type: application/json
 {
   "nombre": "Poliestireno-Cristal Virgen",
   "codigoInterno": "JU-PSC1",
-  "tipo": "POLIESTIRENO_CRISTAL",
+  "tipo": "POLIESTIRENO",
   "proveedor": "INEOS",
   "unidadMedida": "KILOGRAMO",
   "costoUnitario": 30,
@@ -55,11 +55,11 @@ Content-Type: application/json
 }
 
 ### Editar materia prima (reemplaza el 1 por el id real que regresó el create)
-PATCH {{baseUrl}}/materias-primas/1
+PATCH {{baseUrl}}/materias-primas/2
 Content-Type: application/json
 
 {
-  "nombre": "Polipropileno Virgen Actualizado",
+  "nombre": "Poliestireno Virgen",
   "costoUnitario": 32
 }
 

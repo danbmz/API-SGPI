@@ -22,6 +22,7 @@ export const crearOrdenBodySchema = Type.Union([
   Type.Object({
     tipoMaterial: Type.Literal("VIRGEN"),
     folio: Type.String({ minLength: 1, maxLength: 50 }),
+    pedidoId: Type.Optional(Type.String()),
     productoId: Type.String(),
     materiaPrimaId: Type.String(),
     pigmentoId: Type.String(),
@@ -38,6 +39,7 @@ export const crearOrdenBodySchema = Type.Union([
       Type.Literal("MEZCLA_RECICLADO"),
     ]),
     folio: Type.String({ minLength: 1, maxLength: 50 }),
+    pedidoId: Type.Optional(Type.String()),
     productoId: Type.String(),
     materiaPrimaId: Type.String(),
     pigmentoId: Type.String(),

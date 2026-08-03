@@ -23,10 +23,12 @@ Content-Type: application/json
   "nombre": "Jarra 2L",
   "codigo": "7501000001",
   "tipo": "Jarra",
-  "materiaPrimaId": "1",
   "cavidades": 2,
   "ciclo": 28,
-  "peso": 185
+  "peso": 185,
+  "piezasPorEmpaque": 100,
+  "precio": 7.14,
+  "descripcion": "Jarra Walmart"
 }
 
 ### Intentar crear con el mismo código — debe fallar con 409
@@ -43,7 +45,7 @@ Content-Type: application/json
   "peso": 100
 }
 
-### Crear con materia prima inexistente — debe fallar con 404
+### Crear con datos faltantes — debe fallar con 400
 POST {{baseUrl}}/productos
 Content-Type: application/json
 
@@ -51,7 +53,6 @@ Content-Type: application/json
   "nombre": "Producto fantasma",
   "codigo": "TEST-999",
   "tipo": "Vaso",
-  "materiaPrimaId": "9999",
   "cavidades": 1,
   "ciclo": 20,
   "peso": 50
@@ -103,13 +104,15 @@ POST {{baseUrl}}/productos
 Content-Type: application/json
 
 {
-  "nombre": "Intento no autorizado",
-  "codigo": "TEST-403",
-  "tipo": "Vaso",
-  "materiaPrimaId": "1",
-  "cavidades": 1,
-  "ciclo": 20,
-  "peso": 50
+  "nombre": "Jarra 2L",
+  "codigo": "7501000011",
+  "tipo": "Jarra",
+  "cavidades": 2,
+  "ciclo": 28,
+  "peso": 185,
+  "piezasPorEmpaque": 100,
+  "precio": 7.14,
+  "descripcion": "Jarra Walmart"
 }
 
 ### Volver a loguear como admin

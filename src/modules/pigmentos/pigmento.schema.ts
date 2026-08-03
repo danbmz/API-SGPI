@@ -5,11 +5,18 @@ const categoriaColorPigmentoSchema = Type.Union([
   Type.Literal("SOLIDO_PASTEL"),
   Type.Literal("NEON_TRASLUCIDO"),
   Type.Literal("JARRA_NEON_PASTEL"),
+  Type.Literal("NATURAL"),
 ]);
 
 const tipoPigmentoSchema = Type.Union([
   Type.Literal("MASTER"),
   Type.Literal("POLVO"),
+]);
+
+const tipoMaterialSchema = Type.Union([
+  Type.Literal("POLIPROPILENO"),
+  Type.Literal("POLIESTIRENO"),
+  Type.Literal("POLIETILENO"),
 ]);
 
 // ---------- Crear ----------
@@ -18,15 +25,18 @@ export const crearPigmentoBodySchema = Type.Object({
   color: Type.String({ minLength: 1, maxLength: 100 }),
   categoriaColor: categoriaColorPigmentoSchema,
   tipo: tipoPigmentoSchema,
+  tipoMaterial: tipoMaterialSchema,
   dosisGrPorKg: Type.Number({ minimum: 0 }),
-  materiaPrimaId: Type.String(),
   stockMinimo: Type.Number({ minimum: 0, default: 0 }),
+  costoUnitario: Type.Optional(Type.Number({ minimum: 0 })),
+  // Falta codigo
+  // Unidad medida y proveedor?
 });
 
 export type CrearPigmentoBody = Static<typeof crearPigmentoBodySchema>;
 
 // ---------- Editar ----------
-// "categoriaColor, tipo, materiaPrimaId y color" no están porque la combinación que define la identidad del pigmento ([materiaPrimaId, color, categoriaColor, tipo]) no debería cambiar después de creado.
+// "categoriaColor, tipo, tipoMaterual y color" no están porque la combinación que define la identidad del pigmento ([tipoMaterial, color, categoriaColor, tipo]) no debería cambiar después de creado.
 export const editarPigmentoBodySchema = Type.Object({
   dosisGrPorKg: Type.Optional(Type.Number({ minimum: 0 })),
   stockMinimo: Type.Optional(Type.Number({ minimum: 0 })),
@@ -50,9 +60,10 @@ export const pigmentoResponseSchema = Type.Object({
   categoriaColor: categoriaColorPigmentoSchema,
   tipo: tipoPigmentoSchema,
   dosisGrPorKg: Type.Number(),
-  materiaPrimaId: Type.String(),
-  materiaPrimaNombre: Type.String(),
+  tipoMaterial: tipoMaterialSchema,
   activo: Type.Boolean(),
+  // stockActual: Type.Integer(),
+  // stockMinimo: Type.Integer(),
 });
 
 export const listaPigmentoResponseSchema = Type.Array(pigmentoResponseSchema);

@@ -3,50 +3,46 @@ import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import { compararCambios } from "../../utils/comparar-cambios.js";
 import type { AuthUser } from "../../types/fastify.js";
 import type { CrearProductoBody, EditarProductoBody } from "./producto.schema.js";
+import type { TipoMaterial } from "../../../prisma/generated/prisma/client/enums.js";
 
 function serializar(producto: {
   id: bigint;
   nombre: string;
   codigo: string;
   tipo: string;
-  materiaPrimaId: bigint;
-  materiaPrima: { nombre: string };
+  tipoMaterial: TipoMaterial,
   cavidades: number;
   ciclo: number;
 //   Se maneja Unkown para tratar tipos desconocidos para JS, como el tipo de dato Prisma.Decimal que es el que adopta "peso" por haberlo hecho Decimal en el esquema de prisma (Aunque se puede importar dicho tipo para mayor precision).
   peso: unknown;
   activo: boolean;
+  piezasPorEmpaque: number;
+  precio: unknown;
+  descripcion: string;
 }) {
   return {
     id: producto.id.toString(),
     nombre: producto.nombre,
     codigo: producto.codigo,
     tipo: producto.tipo,
-    materiaPrimaId: producto.materiaPrimaId.toString(),
-    materiaPrimaNombre: producto.materiaPrima.nombre,
     cavidades: producto.cavidades,
     ciclo: producto.ciclo,
     peso: Number(producto.peso),
     activo: producto.activo,
+    piezasPorEmpaque: producto.piezasPorEmpaque,
+    precio: Number(producto.precio),
+    descripcion: producto.descripcion,
   };
 }
 
 export async function listarProductos() {
   const productos = await prisma.producto.findMany({
-    include: { materiaPrima: true },
     orderBy: { nombre: "asc" },
   });
   return productos.map(serializar);
 }
 
 export async function crearProducto(data: CrearProductoBody, actor: AuthUser, ip?: string) {
-// Transformamos a BigInt para que coincida con el tipo de dato en la base
-  const materiaPrimaId = BigInt(data.materiaPrimaId);
-
-  const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
-  if (!materiaPrima) {
-    throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
-  }
 
   const existente = await prisma.producto.findUnique({ where: { codigo: data.codigo } });
   if (existente) {
@@ -58,12 +54,14 @@ export async function crearProducto(data: CrearProductoBody, actor: AuthUser, ip
       nombre: data.nombre,
       codigo: data.codigo,
       tipo: data.tipo,
-      materiaPrimaId,
       cavidades: data.cavidades,
       ciclo: data.ciclo,
       peso: data.peso,
+      tipoMaterial: data.tipoMaterial,
+      piezasPorEmpaque: data.piezasPorEmpaque,
+      precio: data.precio,
+      descripcion: data.descripcion,
     },
-    include: { materiaPrima: true },
   });
 
   await registrarAccion({
@@ -106,8 +104,10 @@ export async function editarProducto(
       ...(data.cavidades !== undefined && { cavidades: data.cavidades }),
       ...(data.ciclo !== undefined && { ciclo: data.ciclo }),
       ...(data.peso !== undefined && { peso: data.peso }),
+      ...(data.piezasPorEmpaque !== undefined && { piezasPorEmpaque: data.piezasPorEmpaque}),
+      ...(data.precio !== undefined && { precio: data.precio}),
+      ...(data.descripcion !== undefined && {descripcion: data.descripcion}),
     },
-    include: { materiaPrima: true },
   });
 
   await registrarAccion({

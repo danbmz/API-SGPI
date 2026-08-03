@@ -1,4 +1,11 @@
 import { Type, type Static } from "@sinclair/typebox";
+import { TipoMaterial } from "../../../prisma/generated/prisma/client/enums.js";
+
+const tipoMaterialSchema = Type.Union([
+  Type.Literal("POLIPROPILENO"),
+  Type.Literal("POLIESTIRENO"),
+  Type.Literal("POLIETILENO"),
+]);
 
 // ---------- Crear ----------
 
@@ -6,10 +13,13 @@ export const crearProductoBodySchema = Type.Object({
   nombre: Type.String({ minLength: 1, maxLength: 150 }),
   codigo: Type.String({ minLength: 1, maxLength: 50 }),
   tipo: Type.String({ minLength: 1, maxLength: 100 }),
-  materiaPrimaId: Type.String(),
+  tipoMaterial: tipoMaterialSchema,
   cavidades: Type.Integer({ minimum: 1 }),
   ciclo: Type.Integer({ minimum: 1 }), // segundos
   peso: Type.Number({ minimum: 0 }), // gramos
+  piezasPorEmpaque: Type.Integer({ exclusiveMinimum: 0}),
+  precio: Type.Number({ exclusiveMinimum: 0}),
+  descripcion: Type.String({minLength: 1, maxLength: 100}),
 });
 
 export type CrearProductoBody = Static<typeof crearProductoBodySchema>;
@@ -19,11 +29,12 @@ export type CrearProductoBody = Static<typeof crearProductoBodySchema>;
 export const editarProductoBodySchema = Type.Object({
   nombre: Type.Optional(Type.String({ minLength: 1, maxLength: 150 })),
   tipo: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
-//   Usamos Integer para verificar que el numero es un entero y no un decimal
-  cavidades: Type.Optional(Type.Integer({ minimum: 1 })),
+  cavidades: Type.Optional(Type.Integer({ minimum: 1 })), //   Usamos Integer para verificar que el numero es un entero y no un decimal
   ciclo: Type.Optional(Type.Integer({ minimum: 1 })),
-//   Number acepta numeros enteros y decimales
-  peso: Type.Optional(Type.Number({ minimum: 0 })),
+  peso: Type.Optional(Type.Number({ minimum: 0 })), //   Number acepta numeros enteros y decimales
+  piezasPorEmpaque: Type.Optional(Type.Integer({ exclusiveMinimum: 0})),
+  precio: Type.Optional(Type.Number({ exclusiveMinimum: 0})),
+  descripcion: Type.Optional(Type.String({minLength: 1, maxLength: 100})),
 });
 
 export type EditarProductoBody = Static<typeof editarProductoBodySchema>;
@@ -40,14 +51,15 @@ export type ProductoParams = Static<typeof productoParamsSchema>;
 
 export const productoResponseSchema = Type.Object({
   id: Type.String(),
-  nombre: Type.String(),
   codigo: Type.String(),
+  nombre: Type.String(),
   tipo: Type.String(),
-  materiaPrimaId: Type.String(),
-  materiaPrimaNombre: Type.String(),
   cavidades: Type.Integer(),
   ciclo: Type.Integer(),
   peso: Type.Number(),
+  piezasPorEmpaque: Type.Integer(),
+  precio: Type.Number(),
+  descripcion: Type.String(),
   activo: Type.Boolean(),
 });
 

@@ -122,6 +122,7 @@ model MateriaPrima {
 
   inventarioVirgen  InventarioMateriaPrima?
   ordenesProduccion OrdenProduccion[] @relation("OrdenMateriaPrimaVirgen")
+  materialPigmentado  CombinacionMaterialPigmentado[]
   movimientosVirgen HistorialMovimientoInventario[] @relation("MovimientoMateriaPrimaVirgen")
 
   @@map("materias_primas")
@@ -190,6 +191,7 @@ enum CategoriaColorPigmento {
   SOLIDO_PASTEL
   NEON_TRASLUCIDO
   JARRA_NEON_PASTEL
+  NATURAL
 }
 
 enum TipoPigmento {
@@ -205,6 +207,7 @@ model Pigmento {
   tipo            TipoPigmento
 
   dosisGrPorKg    Decimal                @db.Decimal(10,3)
+  costoUnitario   Decimal?               @db.Decimal(10,2)
 
   tipoMaterial    TipoMaterial           // ← antes: materiaPrimaId BigInt + relación
 
@@ -214,6 +217,7 @@ model Pigmento {
 
   inventario      InventarioPigmento?
   inventarioProducto  InventarioProductoTerminado[]
+  pedidoDetalle   PedidoDetalle[]          
   ordenesProduccion OrdenProduccion[]
   materialPigmentado  CombinacionMaterialPigmentado[]
   movimientosInventario HistorialMovimientoInventario[]
@@ -242,7 +246,8 @@ model InventarioPigmento {
 model CombinacionMaterialPigmentado {
   id             BigInt       @id @default(autoincrement())
 
-  tipoMaterial   TipoMaterial     // sin relacion 1:N con MaterioPrima o si deberia tener?
+  materiaPrimaId     BigInt
+  materiaPrima       MateriaPrima     @relation(fields: [materiaPrimaId], references: [id])
 
   pigmentoId     BigInt
   pigmento       Pigmento     @relation(fields: [pigmentoId], references: [id])
@@ -251,8 +256,9 @@ model CombinacionMaterialPigmentado {
 
   inventario     InventarioMaterialPigmentado?
   movimientosMaterialPigmentado  HistorialMovimientoInventario[]
+  ordenesQueLoUsaron OrdenProduccion[] @relation("OrdenMaterialPigmentadoUsado")
 
-  @@unique([tipoMaterial, pigmentoId])
+  @@unique([materiaPrimaId, pigmentoId])
   @@map("combinaciones_material_pigmentado")
 }
 
@@ -277,6 +283,8 @@ model Producto {
   codigo         String       @unique
   tipo           String
 
+  tipoMaterial        TipoMaterial
+
   piezasPorEmpaque    Int
   descripcion         String    
 
@@ -291,6 +299,7 @@ model Producto {
 
   inventarios     InventarioProductoTerminado[]
   ordenesProduccion OrdenProduccion[]
+  pedidoDetalle   PedidoDetalle[]          
   movimientosInventario HistorialMovimientoInventario[]
 
   @@map("productos")
@@ -361,6 +370,55 @@ model MotivoParo {
   @@map("motivos_paro")
 }
 
+// ------------------------------------  ESQUEMA DE PEDIDOS
+
+model PedidoDetalle {
+  id          BigInt   @id @default(autoincrement())
+
+  pedidoId    BigInt
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id])
+
+  productoId  BigInt
+  producto    Producto @relation(fields: [productoId], references: [id])
+
+  pigmentoId  BigInt?
+  pigmento    Pigmento? @relation(fields: [pigmentoId], references: [id])
+  // opcional: el cliente podría pedir "500 jarras" sin especificar color todavía,
+  // o si ya lo especifica, aquí queda registrado
+
+  cantidadSolicitada Int
+
+  createdAt   DateTime @default(now())
+
+  @@map("pedido_detalle")
+}
+
+model Pedido {
+  id              BigInt       @id @default(autoincrement())
+
+  numeroPedido    String       @unique
+  cliente         String
+  descripcion     String?      // notas generales, ya no el detalle de productos
+
+  estado          EstadoPedido @default(PENDIENTE)
+
+  activo          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  detalle         PedidoDetalle[]
+  ordenes         OrdenProduccion[]
+
+  @@map("pedidos")
+}
+
+enum EstadoPedido {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
+}
+
 // ------------------------------------ ESQUEMA DE ORDENES DE ordenes_produccion
 
 enum EstadoOrdenProduccion {
@@ -392,6 +450,9 @@ model OrdenProduccion {
   observaciones  String?
 
   tipoMaterial TipoMaterialOrden
+
+  pedidoId BigInt?
+  pedido   Pedido? @relation(fields: [pedidoId], references: [id])
 
   // Material virgen — siempre presente, incluso en mezcla
   materiaPrimaId BigInt
@@ -425,6 +486,18 @@ model OrdenProduccion {
 
   materialSiguienteConfirmado Boolean   @default(false)
   materialConfirmadoEn        DateTime?
+
+  // columnas opcionales pero que se llenan cuando se usa materialPigmentado en una orden
+  combinacionMaterialPigmentadoUsadaId BigInt?
+  combinacionMaterialPigmentadoUsada   CombinacionMaterialPigmentado? @relation("OrdenMaterialPigmentadoUsado", fields: [combinacionMaterialPigmentadoUsadaId], references: [id])
+  materialPigmentadoUsadoKg            Decimal? @db.Decimal(10,3)
+
+  // Snapshot final cuando la orden llega a COMPLETADA o CANCELADA, guardamos los valores totales reales
+  totalPiezasBuenasFinal      Int?
+  totalPiezasDefectuosasFinal Int?
+  totalKgMermaFinal           Decimal? @db.Decimal(10,3)
+  totalKgPlastaFinal          Decimal? @db.Decimal(10,3)
+  totalKgMaterialUsadoFinal   Decimal? @db.Decimal(10,3)
 
   usuarioCreadorId BigInt
   usuarioCreador   Usuario @relation("OrdenCreadaPor", fields: [usuarioCreadorId], references: [id])

@@ -26,10 +26,10 @@ POST {{baseUrl}}/usuarios
 Content-Type: application/json
 
 {
-  "nombre": "Gerardo Zuniga",
-  "usuario": "molino02",
+  "nombre": "Gerardo",
+  "usuario": "pigmento01",
   "password": "nuevaPassword456",
-  "role": "MOLINO"
+  "role": "PIGMENTOS"
 }
 
 ### Editar usuario (reemplaza el 2 por el id real que te regresó el create)

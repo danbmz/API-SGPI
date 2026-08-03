@@ -24,6 +24,7 @@ function serializar(orden: any) {
     remision: orden.remision,
     observaciones: orden.observaciones,
     tipoMaterial: orden.tipoMaterial,
+    clienteEfectivo: orden.pedido ? orden.pedido.cliente : orden.clienteDestino,
     materiaPrimaId: orden.materiaPrimaId.toString(),
     materiaPrimaNombre: orden.materiaPrima.nombre,
     inventarioMolidoId: orden.inventarioMolidoId ? orden.inventarioMolidoId.toString() : null,
@@ -88,6 +89,48 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
   if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
   if (!maquina) throw new Error("MAQUINA_NO_ENCONTRADA");
 
+  // La materia prima debe ser compatible con el tipo de materia prima del producto
+  if(producto.tipoMaterial !== materiaPrima.tipo){
+    throw new Error("MATERIAL_INCOMPATIBLE_CON_PRODUCTO");
+  }
+
+  // El pigmento debe ser compatible con el tipo de materia prima elegida (Asi garantizamos que producto-pigmento-materia sean compatibles)
+  if (pigmento.tipoMaterial !== materiaPrima.tipo) {
+    throw new Error("PIGMENTO_INCOMPATIBLE_CON_MATERIAL");
+  }
+
+  // Si hay mezcla, el molido también debe ser del mismo tipoMaterial
+  if (data.tipoMaterial !== "VIRGEN") {
+    const inventarioMolidoId = BigInt(data.inventarioMolidoId);
+    const inventarioMolido = await prisma.inventarioMolido.findUnique({
+      where: { id: inventarioMolidoId },
+    });
+    if (!inventarioMolido) throw new Error("INVENTARIO_MOLIDO_NO_ENCONTRADO");
+
+    if (inventarioMolido.tipoMaterial !== materiaPrima.tipo) {
+      throw new Error("MOLIDO_INCOMPATIBLE_CON_MATERIAL");
+    }
+  }
+
+  let pedidoId: bigint | undefined;
+  let clienteDestino: string | undefined;
+
+  if (data.pedidoId !== undefined) {
+    pedidoId = BigInt(data.pedidoId);
+    const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
+    if (!pedido) throw new Error("PEDIDO_NO_ENCONTRADO");
+    if (pedido.estado === "CANCELADO") throw new Error("PEDIDO_CANCELADO");
+
+    const detalleCoincide = await prisma.pedidoDetalle.findFirst({
+      where: { pedidoId, productoId, ...(pigmentoId !== undefined && { pigmentoId }) },
+    });
+    if (!detalleCoincide) throw new Error("PRODUCTO_NO_SOLICITADO_EN_PEDIDO");
+
+    clienteDestino = pedido.cliente; // ← aquí sí copiamos el nombre real del cliente
+  } else {
+    clienteDestino = data.clienteDestino; // sin pedido, se usa lo que venga en el body (ej. "STOCK")
+  }
+
   // ---------- Cálculos (snapshots) ----------
   const piezasPorHora = Math.round(3600 / producto.ciclo);
   const piezasPorTurno = piezasPorHora * 8;
@@ -136,8 +179,9 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
         folio: data.folio,
         estado: "BORRADOR",
         productoId,
+        pedidoId,
         totalPiezas: data.totalPiezas,
-        ...(data.clienteDestino !== undefined && { clienteDestino: data.clienteDestino }),
+        clienteDestino,
         ...(data.remision !== undefined && { remision: data.remision }),
         ...(data.observaciones !== undefined && { observaciones: data.observaciones }),
         ...(data.aditivoDescripcion !== undefined && {
@@ -195,7 +239,7 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
 
       await registrarMovimientoMolido(
         {
-          materiaPrimaId: inventarioMolido.materiaPrimaId,
+          tipoMaterial: inventarioMolido.tipoMaterial,
           origen: inventarioMolido.origen,
           colorSolidoId: inventarioMolido.colorSolidoId,
           tipoMovimiento: "SALIDA",
@@ -377,7 +421,7 @@ export async function cancelarOrden(
 
       await registrarMovimientoMolido(
         {
-          materiaPrimaId: inventarioMolido.materiaPrimaId,
+          tipoMaterial: inventarioMolido.tipoMaterial,
           origen: inventarioMolido.origen,
           colorSolidoId: inventarioMolido.colorSolidoId,
           tipoMovimiento: "ENTRADA",

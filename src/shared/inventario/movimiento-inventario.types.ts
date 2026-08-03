@@ -4,7 +4,8 @@ import type {
   ReferenciaMovimientoInventario,
   OrigenMolido,
   Prisma,
-  PrismaClient
+  PrismaClient,
+  TipoMaterial
 } from "../../../prisma/generated/prisma/client/client.js";
 
 export interface MovimientoBase {
@@ -33,7 +34,7 @@ export interface MovimientoProductoInput extends MovimientoBase {
 }
 
 export interface MovimientoMolidoInput extends MovimientoBase {
-  materiaPrimaId: bigint;
+  tipoMaterial: TipoMaterial;
   origen: OrigenMolido;
   colorSolidoId: bigint;
   cantidad: number;

@@ -10,6 +10,12 @@ const tipoInventarioSchema = Type.Union([
 
 const origenMolidoSchema = Type.Union([Type.Literal("INTERNO"), Type.Literal("COMPRADO")]);
 
+const tipoMaterialSchema = Type.Union([
+  Type.Literal("POLIPROPILENO"),
+  Type.Literal("POLIESTIRENO"),
+  Type.Literal("POLIETILENO"),
+]);
+
 // ---------- Entrada de proveedor ----------
 
 export const entradaProveedorBodySchema = Type.Union([
@@ -27,7 +33,7 @@ export const entradaProveedorBodySchema = Type.Union([
   }),
   Type.Object({
     tipoInventario: Type.Literal("MOLIDO"),
-    materiaPrimaId: Type.String(),
+    tipoMaterial: tipoMaterialSchema,
     colorSolidoId: Type.String(), // antes: color con enum
     cantidad: Type.Number({ exclusiveMinimum: 0 }),
     descripcion: Type.Optional(Type.String({ maxLength: 300 })),
@@ -60,7 +66,7 @@ export const ajusteManualBodySchema = Type.Union([
   }),
   Type.Object({
     tipoInventario: Type.Literal("MOLIDO"),
-    materiaPrimaId: Type.String(),
+    tipoMaterial: tipoMaterialSchema,
     origen: origenMolidoSchema,
     colorSolidoId: Type.String(), // antes: color con enum
     diferencia: Type.Number(),
@@ -122,7 +128,7 @@ export const inventarioPigmentoItemSchema = Type.Object({
   color: Type.String(),
   categoriaColor: Type.String(),
   tipo: Type.String(),
-  materiaPrimaNombre: Type.String(),
+  tipoMaterial: tipoMaterialSchema,
   cantidadActual: Type.Number(),
   stockMinimo: Type.Number(),
 });
@@ -139,9 +145,9 @@ export const inventarioProductoItemSchema = Type.Object({
 export const listaInventarioProductoResponseSchema = Type.Array(inventarioProductoItemSchema);
 
 export const inventarioMolidoItemSchema = Type.Object({
-  materiaPrimaId: Type.String(),
-  materiaPrimaNombre: Type.String(),
+  tipoMaterial: tipoMaterialSchema,
   origen: origenMolidoSchema,
+  // Codigo interno?
   colorSolidoId: Type.String(),
   colorSolidoNombre: Type.String(),
   cantidadActual: Type.Number(),

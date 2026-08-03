@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import { compararCambios } from "../../utils/comparar-cambios.js";
 import type { AuthUser } from "../../types/fastify.js";
-import type { CrearMateriaPrimaBody, EditarMateriaPrimaBody } from "./materiaPrima.Schema.js";
+import type { CrearMateriaPrimaBody, EditarMateriaPrimaBody } from "./materiaPrima.schema.js";
 import type { UnidadMedida } from "../../../prisma/generated/prisma/client/enums.js";
 import type { TipoMaterial } from "../../../prisma/generated/prisma/client/enums.js";
 

@@ -37,7 +37,7 @@ Content-Type: application/json
 {
   "tipoInventario": "MATERIA_PRIMA",
   "materiaPrimaId": "1",
-  "cantidad": 200,
+  "cantidad": 2000,
   "descripcion": "Entrada de proveedor Braskem"
 }
 
@@ -48,7 +48,7 @@ Content-Type: application/json
 {
   "tipoInventario": "PIGMENTO",
   "pigmentoId": "1",
-  "cantidad": 15,
+  "cantidad": 300,
   "descripcion": "Entrada de proveedor de pigmento"
 }
 
@@ -58,9 +58,9 @@ Content-Type: application/json
 
 {
   "tipoInventario": "MOLIDO",
-  "materiaPrimaId": "1",
+  "tipoMaterial": "POLIPROPILENO",
   "colorSolidoId": "2",
-  "cantidad": 80,
+  "cantidad": 800,
   "descripcion": "Compra de molido azul a otra fábrica"
 }
 

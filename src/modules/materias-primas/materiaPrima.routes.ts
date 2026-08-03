@@ -15,7 +15,7 @@ import {
   listaMateriaPrimaResponseSchema,
   okResponseSchema,
   errorResponseSchema,
-} from "./materiaPrima.Schema.js";
+} from "./materiaPrima.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
 export default async function materiaPrimaRoutes(

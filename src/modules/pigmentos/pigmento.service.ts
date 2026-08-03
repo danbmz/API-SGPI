@@ -3,7 +3,7 @@ import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import { compararCambios } from "../../utils/comparar-cambios.js";
 import type { AuthUser } from "../../types/fastify.js";
 import type { CrearPigmentoBody, EditarPigmentoBody } from "./pigmento.schema.js";
-import type { CategoriaColorPigmento, TipoPigmento } from "../../../prisma/generated/prisma/client/enums.js";
+import type { CategoriaColorPigmento, TipoPigmento, TipoMaterial } from "../../../prisma/generated/prisma/client/enums.js";
 
 function serializar(pigmento: {
   id: bigint;
@@ -11,8 +11,7 @@ function serializar(pigmento: {
   categoriaColor: CategoriaColorPigmento;
   tipo: TipoPigmento;
   dosisGrPorKg: unknown;
-  materiaPrimaId: bigint;
-  materiaPrima: { nombre: string };
+  tipoMaterial: TipoMaterial;
   activo: boolean;
   inventario: { cantidadActual: unknown; stockMinimo: unknown } | null;
 }) {
@@ -23,35 +22,29 @@ function serializar(pigmento: {
     categoriaColor: pigmento.categoriaColor,
     tipo: pigmento.tipo,
     dosisGrPorKg: Number(pigmento.dosisGrPorKg),
-    materiaPrimaId: pigmento.materiaPrimaId.toString(),
-    materiaPrimaNombre: pigmento.materiaPrima.nombre,
+    tipoMaterial: pigmento.tipoMaterial,
     activo: pigmento.activo,
-    stockActual: pigmento.inventario ? Number(pigmento.inventario.cantidadActual) : 0,
-    stockMinimo: pigmento.inventario ? Number(pigmento.inventario.stockMinimo) : 0,
+    // stockActual: pigmento.inventario ? Number(pigmento.inventario.cantidadActual) : 0,
+    // stockMinimo: pigmento.inventario ? Number(pigmento.inventario.stockMinimo) : 0,
   };
 }
 
 export async function listarPigmentos() {
   const pigmentos = await prisma.pigmento.findMany({
-    include: { materiaPrima: true, inventario: true },
-    orderBy: [{ materiaPrimaId: "asc" }, { color: "asc" }],
+    include: { inventario: true },
+    orderBy: [{ color: "asc" }],
   });
   return pigmentos.map(serializar);
 }
 
 export async function crearPigmento(data: CrearPigmentoBody, actor: AuthUser, ip?: string) {
-  const materiaPrimaId = BigInt(data.materiaPrimaId);
-
-  const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
-  if (!materiaPrima) {
-    throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
-  }
+  // Ya no se valida materiaPrima — tipoMaterial es un enum, no requiere buscar nada
 
   const existente = await prisma.pigmento.findUnique({
     where: {
     // Cuando defines @@unique([materiaPrimaId, color, categoriaColor, tipo]) en Prisma, el cliente genera automáticamente un nombre compuesto uniendo los campos con guión bajo en el mismo orden. Es el nombre que Prisma espera cuando queremos consultar por esa combinación exacta.
-      materiaPrimaId_color_categoriaColor_tipo: {
-        materiaPrimaId,
+      tipoMaterial_color_categoriaColor_tipo: {
+        tipoMaterial: data.tipoMaterial,
         color: data.color,
         categoriaColor: data.categoriaColor,
         tipo: data.tipo,
@@ -69,7 +62,7 @@ export async function crearPigmento(data: CrearPigmentoBody, actor: AuthUser, ip
       categoriaColor: data.categoriaColor,
       tipo: data.tipo,
       dosisGrPorKg: data.dosisGrPorKg,
-      materiaPrimaId,
+      tipoMaterial: data.tipoMaterial,
       inventario: {
         create: {
           cantidadActual: 0,
@@ -77,7 +70,7 @@ export async function crearPigmento(data: CrearPigmentoBody, actor: AuthUser, ip
         },
       },
     },
-    include: { materiaPrima: true, inventario: true },
+    include: { inventario: true },
   });
 
   await registrarAccion({
@@ -140,7 +133,7 @@ export async function editarPigmento(
 //   Devolvemos el registro ahora actualizado con los nuevos cambios
   const final = await prisma.pigmento.findUniqueOrThrow({
     where: { id },
-    include: { materiaPrima: true, inventario: true },
+    include: { inventario: true },
   });
 
   return serializar(final);

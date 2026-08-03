@@ -368,7 +368,7 @@ export async function confirmarSobrante(
 
         await registrarMovimientoMolido(
             {
-            materiaPrimaId: inventarioMolido.materiaPrimaId,
+            tipoMaterial: inventarioMolido.tipoMaterial,
             origen: inventarioMolido.origen,
             colorSolidoId: inventarioMolido.colorSolidoId,
             tipoMovimiento: "SALIDA",
@@ -501,7 +501,7 @@ export async function confirmarSolicitudMaterial(id: bigint, actor: AuthUser, ip
 
         await registrarMovimientoMolido(
             {
-            materiaPrimaId: inventarioMolido.materiaPrimaId,
+            tipoMaterial: inventarioMolido.tipoMaterial,
             origen: inventarioMolido.origen,
             colorSolidoId: inventarioMolido.colorSolidoId,
             tipoMovimiento: "SALIDA",

@@ -2,7 +2,8 @@ import { Type, type Static } from "@sinclair/typebox";
 
 const tipoMaterialSchema = Type.Union([
   Type.Literal("POLIPROPILENO"),
-  Type.Literal("POLIESTIRENO_CRISTAL"),
+  Type.Literal("POLIESTIRENO"),
+  Type.Literal("POLIETILENO"),
 ]);
 
 const unidadMedidaSchema = Type.Union([
