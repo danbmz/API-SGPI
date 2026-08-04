@@ -41,6 +41,8 @@ model Usuario {
   sobrantesConfirmados         AvanceTurno[]       @relation("SobranteConfirmadoPor")
   confirmacionesMolino         AvanceTurno[]       @relation("ConfirmacionMolino")
   solicitudesMaterialConfirmadas SolicitudMaterial[] @relation("SolicitudMaterialConfirmadoPor")
+  incidenciasConfirmadasMolino IncidenciaMaterialMalPigmentado[] @relation("IncidenciaConfirmadaMolino")
+  incidenciasResueltas         IncidenciaMaterialMalPigmentado[] @relation("IncidenciaResueltaPor")
   refreshTokens RefreshToken[] @relation("RefreshTokensUsuario")
   historialInventario  HistorialMovimientoInventario[]
 
@@ -182,6 +184,20 @@ model InventarioMolido {
 
   @@unique([tipoMaterial, origen, colorSolidoId])
   @@map("inventario_molido")
+}
+
+model TipoMolido {
+  id            BigInt        @id @default(autoincrement())
+
+  tipoMaterial  TipoMaterial
+  origen        OrigenMolido
+  codigoInterno String        @unique
+
+  activo        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+
+  @@unique([tipoMaterial, origen])
+  @@map("tipos_molido")
 }
 
 // ---------------------------------- CATALOGOS E INVENTARIO / PIGMENTOS
@@ -354,12 +370,37 @@ model Maquina {
   @@map("maquinas")
 }
 
+// ----------------------------------- CATALOGO DE OPERADORES
+
+model Operador {
+  id         BigInt   @id @default(autoincrement())
+  nombre     String
+
+  activo     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  avancesTurno AvanceTurno[]
+
+  @@map("operadores")
+}
+
 // ----------------------------------- CATALOGO DE MOTIVOS DE PARO
+
+enum CategoriaMotivoParo {
+  INICIO
+  MATERIAL
+  MOLDE
+  MAQUINA
+  OTROS
+}
+
 
 model MotivoParo {
   id        BigInt   @id @default(autoincrement())
 
   nombre    String   @unique
+  categoria  CategoriaMotivoParo
 
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -368,6 +409,21 @@ model MotivoParo {
   tiemposParo TiempoParo[]
 
   @@map("motivos_paro")
+}
+
+// ------------------------------------  ESQUEMA DE DEFECTOS DE PRODUCTOS
+
+model DefectoProducto {
+  id         BigInt   @id @default(autoincrement())
+  nombre     String   @unique
+
+  activo     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  avancesTurno AvanceTurno[]
+
+  @@map("defectos_producto")
 }
 
 // ------------------------------------  ESQUEMA DE PEDIDOS
@@ -390,7 +446,7 @@ model PedidoDetalle {
 
   createdAt   DateTime @default(now())
 
-  orden    OrdenProduccion[]
+  ordenes    OrdenProduccion[]
 
   @@map("pedido_detalle")
 }
@@ -549,6 +605,17 @@ model AvanceTurno {
 
   piezasBuenas       Int     @default(0)
   piezasDefectuosas  Int     @default(0)
+
+  defectoProductoId    BigInt?
+  defectoProducto      DefectoProducto?    @relation(fields: [defectoProductoId], references: [id])
+  descripcionOtro      String?
+
+  operadorId       BigInt?
+  operador         Operador?        @relation(fields: [operadorId], references: [id])
+
+  cicloReal        Int?    // segundos, manual
+  materialKG       Decimal? @db.Decimal(10,3) // manual, informativo
+
   kgMerma            Decimal @db.Decimal(10,3) @default(0)
   kgPlasta           Decimal @db.Decimal(10,3) @default(0)
   piezasCambioColor  Int     @default(0)
@@ -577,6 +644,7 @@ model AvanceTurno {
 
   tiemposParo         TiempoParo[]
   solicitudesMaterial SolicitudMaterial[]
+  incidenciasMalPigmentado IncidenciaMaterialMalPigmentado[]
   moliendas           MoliendaAvanceTurno[]
 
   createdAt DateTime @default(now())
@@ -621,6 +689,42 @@ model SolicitudMaterial {
   createdAt      DateTime @default(now())
 
   @@map("solicitudes_material")
+}
+
+// ================================= MOLIENDAS =============================
+
+enum DestinoPiezasMalPigmentadas {
+  STOCK
+  MOLINO
+}
+
+model IncidenciaMaterialMalPigmentado {
+  id             BigInt   @id @default(autoincrement())
+
+  avanceTurnoId  BigInt
+  avanceTurno    AvanceTurno @relation(fields: [avanceTurnoId], references: [id])
+
+  piezasAfectadas Int
+  destino         DestinoPiezasMalPigmentadas
+
+  // Confirmación de molino — solo aplica si destino = MOLINO
+  confirmadoMolino       Boolean?
+  confirmadoMolinoPorId  BigInt?
+  confirmadoMolinoPor    Usuario? @relation("IncidenciaConfirmadaMolino", fields: [confirmadoMolinoPorId], references: [id])
+  confirmadoMolinoEn     DateTime?
+
+  // Resolución de pigmentos
+  resuelto          Boolean  @default(false)
+  tipoMaterialAgregado TipoMaterialSolicitud?  // VIRGEN o MOLIDO — null si fue solo pigmento
+  kgMaterialAgregado   Decimal? @db.Decimal(10,3)
+  gramosPigmentoAgregado Decimal? @db.Decimal(10,3)
+  resueltoPorId      BigInt?
+  resueltoPor        Usuario? @relation("IncidenciaResueltaPor", fields: [resueltoPorId], references: [id])
+  resueltoEn         DateTime?
+
+  createdAt      DateTime @default(now())
+
+  @@map("incidencias_material_mal_pigmentado")
 }
 
 // ----------------------------------- MOLIENDAS
@@ -707,6 +811,8 @@ enum MotivoMovimientoInventario {
   MERMA_PRODUCCION
   PLASTA
   VENTA
+  ENTREGA_PEDIDO
+  REPIGMENTAR
   DESECHO
   AJUSTE_MANUAL
   CORRECCION_INVENTARIO
@@ -720,6 +826,8 @@ enum ReferenciaMovimientoInventario {
   AVANCE_TURNO
   MOLIENDA
   SOLICITUD_MATERIAL
+  PEDIDO
+  INCIDENCIA_MAL_PIGMENTADO
 }
 
 model HistorialMovimientoInventario {

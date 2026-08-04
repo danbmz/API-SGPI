@@ -9,6 +9,7 @@ import {
   registrarEntradaProveedor,
   registrarAjusteManual,
   consultarHistorial,
+  registrarSalidaProducto,
 } from "./inventario.service.js";
 import {
   entradaProveedorBodySchema,
@@ -22,6 +23,7 @@ import {
   listaMovimientosResponseSchema,
   okResponseSchema,
   errorResponseSchema,
+  salidaProductoBodySchema,
 } from "./inventario.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -133,4 +135,25 @@ export default async function inventarioRoutes(app: FastifyInstance<any, any, an
       }
     }
   );
+
+  // ---------- SALIDA DE PRODUCTOS ----------
+
+  app.post(
+  "/inventario/salida-producto",
+  {
+    schema: {
+      body: salidaProductoBodySchema,
+      response: { 200: okResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema },
+    },
+  },
+  async (request, reply) => {
+    try {
+      await registrarSalidaProducto(request.body, request.authUser!, request.ip);
+      return reply.send({ ok: true });
+    } catch (err) {
+      if (manejarErrorConocido(err, reply)) return;
+      throw err;
+    }
+  }
+);
 }

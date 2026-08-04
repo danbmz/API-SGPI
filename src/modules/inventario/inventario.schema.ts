@@ -167,3 +167,25 @@ export const listaInventarioMaterialPigmentadoResponseSchema = Type.Array(
 
 export const okResponseSchema = Type.Object({ ok: Type.Boolean() });
 export const errorResponseSchema = Type.Object({ error: Type.String() });
+
+// SALIDAS DE PRODUCTOS
+
+const motivoSalidaProductoSchema = Type.Union([
+  Type.Literal("ENTREGA_PEDIDO"),
+  Type.Literal("VENTA"),
+]);
+
+const itemSalidaProductoSchema = Type.Object({
+  productoId: Type.String(),
+  pigmentoId: Type.String(),
+  cantidad: Type.Integer({ exclusiveMinimum: 0 }),
+});
+
+export const salidaProductoBodySchema = Type.Object({
+  motivo: motivoSalidaProductoSchema,
+  pedidoId: Type.Optional(Type.String()), // obligatorio solo si motivo = ENTREGA_PEDIDO
+  items: Type.Array(itemSalidaProductoSchema, { minItems: 1 }),
+  descripcion: Type.Optional(Type.String({ maxLength: 300 })),
+});
+
+export type SalidaProductoBody = Static<typeof salidaProductoBodySchema>;

@@ -10,6 +10,9 @@ import type {
   ConfirmarMolinoBody,
   ConfirmarSobranteBody,
   CrearSolicitudMaterialBody,
+  CrearIncidenciaMalPigmentadoBody,
+  ConfirmarIncidenciaMolinoBody,
+  ResolverIncidenciaBody,
 } from "./avanceTurno.schema.js";
 
 const includeCompleto = {
@@ -31,6 +34,12 @@ function serializar(avance: any) {
     estado: avance.estado,
     piezasBuenas: avance.piezasBuenas,
     piezasDefectuosas: avance.piezasDefectuosas,
+    defectoId: avance.defectoId !== null ? avance.defectoId.toString() : null,
+    defectoNombre: avance.defectoNombre !== null ? avance.defectoNombre : null,
+    cicloReal: avance.cicloReal,
+    materialKG: avance.materialKG,
+    operadorId: avance.operadorId.toString(),
+    operadorNombre: avance.operadorNombre,
     kgMerma: Number(avance.kgMerma),
     kgPlasta: Number(avance.kgPlasta),
     piezasCambioColor: avance.piezasCambioColor,
@@ -51,6 +60,21 @@ function serializarSolicitud(solicitud: any) {
     confirmado: solicitud.confirmado,
     confirmadoPorNombre: solicitud.confirmadoPor ? solicitud.confirmadoPor.nombre : null,
     confirmadoEn: solicitud.confirmadoEn ? solicitud.confirmadoEn.toISOString() : null,
+  };
+}
+
+function serializarIncidencia(inc: any) {
+  return {
+    id: inc.id.toString(),
+    avanceTurnoId: inc.avanceTurnoId.toString(),
+    piezasAfectadas: inc.piezasAfectadas,
+    destino: inc.destino,
+    confirmadoMolino: inc.confirmadoMolino,
+    resuelto: inc.resuelto,
+    tipoMaterialAgregado: inc.tipoMaterialAgregado,
+    kgMaterialAgregado: inc.kgMaterialAgregado !== null ? Number(inc.kgMaterialAgregado) : null,
+    gramosPigmentoAgregado:
+      inc.gramosPigmentoAgregado !== null ? Number(inc.gramosPigmentoAgregado) : null,
   };
 }
 
@@ -158,6 +182,16 @@ export async function actualizarAvanceTurno(
       ...(data.kgPlasta !== undefined && { kgPlasta: data.kgPlasta }),
       ...(data.piezasCambioColor !== undefined && { piezasCambioColor: data.piezasCambioColor }),
       ...(data.kgSobrante !== undefined && { kgSobrante: data.kgSobrante }),
+      ...(data.tipoMaterialSobrante !== undefined && {
+        tipoMaterialSobrante: data.tipoMaterialSobrante,
+      }),
+      ...(data.defectoId !== undefined && { defectoId: BigInt(data.defectoId) }),
+      ...(data.defectoDescripcionOtro !== undefined && {
+        defectoDescripcionOtro: data.defectoDescripcionOtro,
+      }),
+      ...(data.operadorId !== undefined && { operadorId: BigInt(data.operadorId) }),
+      ...(data.cicloReal !== undefined && { cicloReal: data.cicloReal }),
+      ...(data.materialKG !== undefined && { materialKG: data.materialKG }),
       ...(data.observaciones !== undefined && { observaciones: data.observaciones }),
       borradorGuardado: true,
     },
@@ -181,6 +215,20 @@ export async function cerrarAvanceTurno(
   if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
   if (avance.supervisorId !== actor.id) throw new Error("AVANCE_TURNO_NO_PROPIO");
   if (avance.estado !== "ABIERTO") throw new Error("AVANCE_TURNO_YA_CERRADO");
+
+  const operadorId = BigInt(data.operadorId);
+  const operador = await prisma.operador.findUnique({ where: { id: operadorId } });
+  if (!operador) throw new Error("OPERADOR_NO_ENCONTRADO");
+  if (!operador.activo) throw new Error("OPERADOR_INACTIVO");
+
+  let defectoId: bigint | undefined;
+  if (data.defectoId !== undefined) {
+    defectoId = BigInt(data.defectoId);
+    const defecto = await prisma.defectoProducto.findUnique({ where: { id: defectoId } });
+    if (!defecto) throw new Error("DEFECTO_NO_ENCONTRADO");
+    if (!defecto.activo) throw new Error("DEFECTO_INACTIVO");
+  }
+
   // Comprobamos que venga el valor del tipo de material que se devolvera a inventario  
   if (data.kgSobrante !== undefined && data.kgSobrante > 0 && data.tipoMaterialSobrante === undefined) {
     throw new Error("TIPO_MATERIAL_SOBRANTE_REQUERIDO");
@@ -196,6 +244,13 @@ export async function cerrarAvanceTurno(
         piezasDefectuosas: data.piezasDefectuosas,
         kgMerma: data.kgMerma,
         kgPlasta: data.kgPlasta,
+        operadorId,
+        cicloReal: data.cicloReal,
+        materialKG: data.materialKG,
+        ...(defectoId !== undefined && { defectoId }),
+        ...(data.defectoDescripcionOtro !== undefined && {
+          defectoDescripcionOtro: data.defectoDescripcionOtro,
+        }),
         ...(data.piezasCambioColor !== undefined && { piezasCambioColor: data.piezasCambioColor }),
         ...(data.kgSobrante !== undefined && { kgSobrante: data.kgSobrante }),
         ...(data.tipoMaterialSobrante !== undefined && {
@@ -247,11 +302,11 @@ export async function cerrarAvanceTurno(
 
       const detallesDelPedido = await tx.pedidoDetalle.findMany({
         where: { pedidoId },
-        include: { orden: true },
+        include: { ordenes: true },
       });
 
       // Aplanamos en un solo arreglo todos los arreglos de pedidoDetalle que componen un pedido, que a su vez contienen ordenes
-      const todasLasOrdenes = detallesDelPedido.flatMap((d) => d.orden);
+      const todasLasOrdenes = detallesDelPedido.flatMap((d) => d.ordenes);
 
       // "Completo" significa: hay al menos una orden por línea, y todas las que existen están COMPLETADA.
       // (una línea sin ninguna orden todavía no cuenta como cubierta)
@@ -559,4 +614,199 @@ export async function confirmarSolicitudMaterial(id: bigint, actor: AuthUser, ip
     entidadId: id,
     ...(ip !== undefined && { ip }),
   });
+}
+
+// ====== Caso especial material mal pigmentado =======
+export async function crearIncidenciaMalPigmentado(
+  avanceTurnoId: bigint,
+  data: CrearIncidenciaMalPigmentadoBody,
+  actor: AuthUser,
+  ip?: string
+) {
+  const avance = await prisma.avanceTurno.findUnique({
+    where: { id: avanceTurnoId },
+    include: { orden: true },
+  });
+  if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
+  if (avance.supervisorId !== actor.id) throw new Error("AVANCE_TURNO_NO_PROPIO");
+  if (avance.estado !== "ABIERTO") throw new Error("AVANCE_TURNO_YA_CERRADO");
+
+  const nueva = await prisma.$transaction(async (tx) => {
+    const incidencia = await tx.incidenciaMaterialMalPigmentado.create({
+      data: {
+        avanceTurnoId,
+        piezasAfectadas: data.piezasAfectadas,
+        destino: data.destino,
+      },
+    });
+
+    if (data.destino === "STOCK") {
+      // Entra directo al inventario, con el color/pigmento original de la orden
+      await registrarMovimientoProducto(
+        {
+          productoId: avance.orden.productoId,
+          pigmentoId: avance.orden.pigmentoId,
+          tipoMovimiento: "ENTRADA",
+          motivo: "PRODUCTO_DEFECTUOSO",
+          cantidad: data.piezasAfectadas,
+          usuarioId: actor.id,
+          referenciaTipo: "INCIDENCIA_MAL_PIGMENTADO",
+          referenciaId: incidencia.id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
+    // Si destino = MOLINO, no se dispara nada aún — queda pendiente de confirmación
+
+    return incidencia;
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "reportar_material_mal_pigmentado",
+    entidad: "incidencia_mal_pigmentado",
+    entidadId: nueva.id,
+    ...(ip !== undefined && { ip }),
+  });
+
+  return serializarIncidencia(nueva);
+}
+
+export async function confirmarIncidenciaMolino(
+  id: bigint,
+  data: ConfirmarIncidenciaMolinoBody,
+  actor: AuthUser,
+  ip?: string
+) {
+  const incidencia = await prisma.incidenciaMaterialMalPigmentado.findUnique({ where: { id } });
+  if (!incidencia) throw new Error("INCIDENCIA_NO_ENCONTRADA");
+  if (incidencia.destino !== "MOLINO") throw new Error("INCIDENCIA_NO_ES_PARA_MOLINO");
+  if (incidencia.confirmadoMolino !== null) throw new Error("INCIDENCIA_YA_CONFIRMADA_MOLINO");
+
+  const actualizada = await prisma.incidenciaMaterialMalPigmentado.update({
+    where: { id },
+    data: {
+      confirmadoMolino: data.confirmado,
+      confirmadoMolinoPorId: actor.id,
+      confirmadoMolinoEn: new Date(),
+    },
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "MOLINO",
+    accion: "confirmar_incidencia_mal_pigmentado",
+    entidad: "incidencia_mal_pigmentado",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
+  });
+
+  return serializarIncidencia(actualizada);
+}
+
+export async function resolverIncidencia(
+  id: bigint,
+  data: ResolverIncidenciaBody,
+  actor: AuthUser,
+  ip?: string
+) {
+  const incidencia = await prisma.incidenciaMaterialMalPigmentado.findUnique({
+    where: { id },
+    include: { avanceTurno: { include: { orden: true } } },
+  });
+  if (!incidencia) throw new Error("INCIDENCIA_NO_ENCONTRADA");
+  if (incidencia.resuelto) throw new Error("INCIDENCIA_YA_RESUELTA");
+
+  const orden = incidencia.avanceTurno.orden;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.incidenciaMaterialMalPigmentado.update({
+      where: { id },
+      data: {
+        resuelto: true,
+        ...(data.tipoMaterialAgregado !== undefined && {
+          tipoMaterialAgregado: data.tipoMaterialAgregado,
+        }),
+        ...(data.kgMaterialAgregado !== undefined && {
+          kgMaterialAgregado: data.kgMaterialAgregado,
+        }),
+        ...(data.gramosPigmentoAgregado !== undefined && {
+          gramosPigmentoAgregado: data.gramosPigmentoAgregado,
+        }),
+        resueltoPorId: actor.id,
+        resueltoEn: new Date(),
+      },
+    });
+
+    if (data.tipoMaterialAgregado === "VIRGEN" && data.kgMaterialAgregado !== undefined) {
+      await registrarMovimientoMateriaPrima(
+        {
+          materiaPrimaId: orden.materiaPrimaId,
+          tipoMovimiento: "SALIDA",
+          motivo: "REPIGMENTAR",
+          cantidad: data.kgMaterialAgregado,
+          usuarioId: actor.id,
+          referenciaTipo: "INCIDENCIA_MAL_PIGMENTADO",
+          referenciaId: id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
+
+    if (data.tipoMaterialAgregado === "MOLIDO" && data.kgMaterialAgregado !== undefined) {
+      if (!orden.inventarioMolidoId) throw new Error("ORDEN_SIN_MOLIDO_ASIGNADO");
+      const inventarioMolido = await tx.inventarioMolido.findUniqueOrThrow({
+        where: { id: orden.inventarioMolidoId },
+      });
+
+      await registrarMovimientoMolido(
+        {
+          tipoMaterial: inventarioMolido.tipoMaterial,
+          origen: inventarioMolido.origen,
+          colorSolidoId: inventarioMolido.colorSolidoId,
+          tipoMovimiento: "SALIDA",
+          motivo: "REPIGMENTAR",
+          cantidad: data.kgMaterialAgregado,
+          usuarioId: actor.id,
+          referenciaTipo: "INCIDENCIA_MAL_PIGMENTADO",
+          referenciaId: id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
+
+    if (data.gramosPigmentoAgregado !== undefined) {
+      await registrarMovimientoPigmento(
+        {
+          pigmentoId: orden.pigmentoId,
+          tipoMovimiento: "SALIDA",
+          motivo: "REPIGMENTAR",
+          cantidad: data.gramosPigmentoAgregado / 1000, // gramos a kg
+          usuarioId: actor.id,
+          referenciaTipo: "INCIDENCIA_MAL_PIGMENTADO",
+          referenciaId: id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "PIGMENTOS",
+    accion: "resolver_incidencia_mal_pigmentado",
+    entidad: "incidencia_mal_pigmentado",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
+  });
+
+  const final = await prisma.incidenciaMaterialMalPigmentado.findUniqueOrThrow({ where: { id } });
+  return serializarIncidencia(final);
 }

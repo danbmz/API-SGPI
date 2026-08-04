@@ -75,6 +75,10 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   SOLICITUD_MATERIAL_NO_ENCONTRADA: {code: 404, message: "Solicitud no encontrada"},
   SOLICITUD_MATERIAL_YA_CONFIRMADA: {code: 409, message: "Esta solicitud ya ha sido confirmada"},
   ORDEN_SIN_MOLIDO_ASIGNADO: {code: 409, message: "Se solicita molido, pero la orden no indica qué tipo de molido usar"},
+  INCIDENCIA_NO_ENCONTRADA: {code: 404, message: "Incidencia no encontrada"},
+  INCIDENCIA_NO_ES_PARA_MOLINO: {code: 409, message: "Los productos no se mandaron a molino"},
+  INCIDENCIA_YA_CONFIRMADA_MOLINO: {code: 409, message: "Productos mal pigmentados ya confirmados"},
+  INCIDENCIA_YA_RESUELTA: {code: 409, message: "Ya se repimento el material"},
   // ERRORES DE PEDIDOS
   PEDIDO_NO_ENCONTRADO: { code: 404, message: "Pedido no encontrado"},
   PEDIDO_NUMERO_YA_EXISTE: { code: 409, message: "Ya existe un pedido con el mismo número"},
@@ -82,8 +86,21 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   PEDIDO_NO_SE_PUEDE_CANCELAR: { code: 409, message: "El pedido no se puede cancelar"},
   PEDIDO_TIENE_ORDENES_EN_PROGRESO: { code: 409, message: "El pedido tiene ordenes en progreso"},
   PEDIDO_NO_SE_PUEDE_MODIFICAR: { code: 409, message: "El pedido ya no se puede modificar"},
+  PEDIDO_REQUERIDO_PARA_ENTREGA: {code: 409, message: "Indica el pedido al que pertenece esta salida"},
+  PRODUCTO_NO_PERTENECE_AL_PEDIDO: {code: 409, message: "Este producto no forma parte del pedido"},
   // ERRORES DE LINEA (PEDIDODETALLE)
   PEDIDO_DETALLE_NO_ENCONTRADO: {code: 404, message: "Detalle de pedido no encontrado"},
+  // ERRORES DE OPERADOR
+  OPERADOR_NO_ENCONTRADO: {code: 404, message: "El operador no se encontro"},
+  OPERADOR_YA_EXISTE: {code: 409, message: "Ya existe un operador con el mismo nombre"},
+  OPERADOR_YA_INACTIVO: {code: 409, message: "El operador ya está desactivado"},
+  OPERADOR_YA_ACTIVO: {code: 409, message: "El operador ya está activado"},
+  OPERADOR_INACTIVO: {code: 409, message: "El operador ya está inactivo"},
+  // ERRORES DE CATALOGO DEFECTOS
+  DEFECTO_NO_ENCONTRADO: {code: 404, message: "Defecto no encontrado"},
+  DEFECTO_YA_EXISTE: {code: 409, message: "Este defecto ya existe"},
+  DEFECTO_INACTIVO: {code: 409, message: "El defecto ya está inactivo"},
+  DEFECTO_YA_ACTIVO: {code: 409, message: "El defecto ya está activo"}
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

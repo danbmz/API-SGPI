@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import {
   registrarMovimientoMateriaPrima,
   registrarMovimientoPigmento,
@@ -6,8 +7,9 @@ import {
   registrarMovimientoMolido,
   registrarMovimientoMaterialPigmentado,
 } from "../../shared/inventario/movimiento-inventario.service.js";
+import type { PrismaTransactionClient } from "../../shared/inventario/movimiento-inventario.types.js";
 import type { AuthUser } from "../../types/fastify.js";
-import type { EntradaProveedorBody, AjusteManualBody, HistorialQuery } from "./inventario.schema.js";
+import type { EntradaProveedorBody, AjusteManualBody, HistorialQuery, SalidaProductoBody } from "./inventario.schema.js";
 
 // Aqui no hay funcion serializar porque cada funcion trata con una tabla diferente
 // ---------- LISTADOS ----------
@@ -63,16 +65,25 @@ export async function listarInventarioProducto() {
 
 export async function listarInventarioMolido() {
   const registros = await prisma.inventarioMolido.findMany({
-    include: { colorSolido: true }
+    include: { colorSolido: true },
+    orderBy: { tipoMaterial: "asc" },
   });
 
-  return registros.map((r) => ({
-    tipoMaterial: r.tipoMaterial,
-    origen: r.origen,
-    colorSolidoId: r.colorSolidoId.toString(),
-    colorSolidoNombre: r.colorSolido.nombre,
-    cantidadActual: Number(r.cantidadActual),
-  }));
+  const tiposMolido = await prisma.tipoMolido.findMany();
+
+  return registros.map((r) => {
+    const tipo = tiposMolido.find(
+      (t) => t.tipoMaterial === r.tipoMaterial && t.origen === r.origen
+    );
+    return {
+      tipoMaterial: r.tipoMaterial,
+      origen: r.origen,
+      codigoInterno: tipo?.codigoInterno ?? null,
+      colorSolidoId: r.colorSolidoId.toString(),
+      colorSolidoNombre: r.colorSolido.nombre,
+      cantidadActual: Number(r.cantidadActual),
+    };
+  });
 }
 
 export async function listarInventarioMaterialPigmentado() {
@@ -249,4 +260,68 @@ export async function consultarHistorial(query: HistorialQuery) {
     usuarioNombre: m.usuario.nombre,
     createdAt: m.createdAt.toISOString(),
   }));
+}
+
+// ---------- SALIDA DE PRODUCTOS ----------
+
+export async function registrarSalidaProducto(
+  data: SalidaProductoBody,
+  actor: AuthUser,
+  ip?: string
+) {
+  if (data.motivo === "ENTREGA_PEDIDO" && data.pedidoId === undefined) {
+    throw new Error("PEDIDO_REQUERIDO_PARA_ENTREGA");
+  }
+
+  let pedidoId: bigint | undefined;
+  if (data.pedidoId !== undefined) {
+    pedidoId = BigInt(data.pedidoId);
+    const pedido = await prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      include: { detalle: true },
+    });
+    if (!pedido) throw new Error("PEDIDO_NO_ENCONTRADO");
+    if (pedido.estado === "CANCELADO") throw new Error("PEDIDO_CANCELADO");
+
+    // Validación flexible: cada producto del envío debe existir en alguna línea del pedido
+    // (sin importar color ni cantidad exacta)
+    const productosDelPedido = new Set(pedido.detalle.map((d) => d.productoId.toString()));
+    for (const item of data.items) {
+      if (!productosDelPedido.has(item.productoId)) {
+        throw new Error("PRODUCTO_NO_PERTENECE_AL_PEDIDO");
+      }
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of data.items) {
+      await registrarMovimientoProducto(
+        {
+          productoId: BigInt(item.productoId),
+          pigmentoId: BigInt(item.pigmentoId),
+          tipoMovimiento: "SALIDA",
+          motivo: data.motivo,
+          cantidad: item.cantidad,
+          usuarioId: actor.id,
+          ...(pedidoId !== undefined && {
+            referenciaTipo: "PEDIDO" as const,
+            referenciaId: pedidoId,
+          }),
+          ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "INVENTARIO",
+    accion: data.motivo === "ENTREGA_PEDIDO" ? "entregar_pedido" : "registrar_venta",
+    entidad: "inventario_producto",
+    ...(pedidoId !== undefined && { entidadId: pedidoId }),
+    ...(ip !== undefined && { ip }),
+  });
 }
