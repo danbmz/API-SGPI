@@ -16,6 +16,7 @@ import colorSolidoRoutes from "./modules/colores-solidos/colorSolido.routes.js";
 import inventarioRoutes from "./modules/inventario/inventario.routes.js";
 import ordenRoutes from "./modules/ordenes/orden.routes.js";
 import avanceTurnoRoutes from "./modules/avances-turno/avanceTurno.routes.js";
+import pedidoRoutes from "./modules/pedidos/pedido.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -37,6 +38,7 @@ export function buildApp() {
   app.register(inventarioRoutes)
   app.register(ordenRoutes)
   app.register(avanceTurnoRoutes)
+  app.register(pedidoRoutes)
 
   return app;
 }

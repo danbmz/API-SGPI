@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { listarOrdenes, crearOrden, confirmarMaterialSiguiente, activarOrden, pausarOrden, reanudarOrden, cancelarOrden } from "./orden.service.js";
+import { listarOrdenes, crearOrden, confirmarMaterialSiguiente, activarOrden, pausarOrden, reanudarOrden, cancelarOrden, sustituirMaterialPigmentado } from "./orden.service.js";
 import {
   crearOrdenBodySchema,
   ordenParamsSchema,
@@ -10,6 +10,7 @@ import {
   errorResponseSchema,
   cambiarEstadoOrdenBodySchema,
   cancelarOrdenBodySchema,
+  sustituirMaterialPigmentadoBodySchema,
 } from "./orden.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -157,6 +158,35 @@ export default async function ordenRoutes(app: FastifyInstance<any, any, any, an
         try {
           await confirmarMaterialSiguiente(BigInt(request.params.id), request.authUser!, request.ip);
           return reply.send({ ok: true });
+        } catch (err) {
+          if (manejarErrorConocido(err, reply)) return;
+          throw err;
+        }
+      }
+    );
+
+    app.patch(
+        "/ordenes/:id/sustituir-material-pigmentado",
+      {
+        schema: {
+          params: ordenParamsSchema,
+          body: sustituirMaterialPigmentadoBodySchema,
+          response: {
+            200: ordenResponseSchema,
+            404: errorResponseSchema,
+            409: errorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const orden = await sustituirMaterialPigmentado(
+            BigInt(request.params.id),
+            request.body,
+            request.authUser!,
+            request.ip
+          );
+          return reply.send(orden);
         } catch (err) {
           if (manejarErrorConocido(err, reply)) return;
           throw err;

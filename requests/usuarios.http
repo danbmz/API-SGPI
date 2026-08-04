@@ -27,9 +27,9 @@ Content-Type: application/json
 
 {
   "nombre": "Gerardo",
-  "usuario": "pigmento01",
+  "usuario": "molino01",
   "password": "nuevaPassword456",
-  "role": "PIGMENTOS"
+  "role": "MOLINO"
 }
 
 ### Editar usuario (reemplaza el 2 por el id real que te regresó el create)

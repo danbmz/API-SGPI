@@ -18,7 +18,7 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   PIGMENTO_YA_INACTIVO: { code: 409, message: "El pigmento ya está desactivado"},
   PIGMENTO_YA_ACTIVO:{code: 409, message: "El pigmento ya está activo"},
   // ERRORES PRODUCTOS
-  PRODUCTO_NO_ENCONTRADO: {code: 404, message: "Producto no encontrada"}, 
+  PRODUCTO_NO_ENCONTRADO: {code: 404, message: "Producto no encontrado"}, 
   PRODUCTO_YA_EXISTE: { code: 409, message: "Producto ya registrado"},
   PRODUCTO_YA_INACTIVO: {code: 409, message: "El producto ya está desactivado"}, 
   PRODUCTO_YA_ACTIVO: {code: 409, message: "El producto ya está activo"},
@@ -49,6 +49,17 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   ORDEN_NO_SE_PUEDE_REANUDAR: {code: 409, message: "La orden no se puede reanudar"},
   ORDEN_NO_SE_PUEDE_CANCELAR: {code: 409, message: "La orden no se puede cancelar"},
   CANCELACION_EN_PROGRESO_NO_DISPONIBLE: {code: 409, message: "No puedes cancelar una orden ya iniciada"},
+  MATERIAL_INCOMPATIBLE_CON_PRODUCTO: {code: 409, message: "Materia prima incompatible con el producto"},
+  PIGMENTO_INCOMPATIBLE_CON_MATERIAL: {code: 409, message: "Pigmento incompatible con materia prima"},
+  MOLIDO_INCOMPATIBLE_CON_MATERIAL: { code: 409, message: "El molido debe ser del mismo tipo que la materia prima"},
+  PRODUCTO_NO_COINCIDE_CON_DETALLE: { code: 409, message: "El producto elegido no coincide con el definido en el detalle del pedido"},
+  PIGMENTO_NO_COINCIDE_CON_DETALLE: { code: 409, message: "El pigmento seleccionado no coincide con el definido en el detalle del pedido"},
+  ORDEN_NO_ACTIVA_PARA_SUSTITUCION: {code: 409, message: "Orden no activa"},
+  ORDEN_YA_TIENE_SUSTITUCION: {code: 409, message: "Ya sustituiste material en esta orden"},
+  COMBINACION_MATERIAL_PIGMENTADO_NO_ENCONTRADA: {code: 409, message: "No hay material pigmentado para sustituir en esta orden"},
+  COMBINACION_INCOMPATIBLE_CON_ORDEN: {code: 409, message: "El material pigmentado debe ser el mismo que va usar la orden"},
+  SUSTITUCION_EXCEDE_VIRGEN_REQUERIDO: {code: 409, message: "No puedes agregar mas kilos de los requeridos"},
+  STOCK_INSUFICIENTE_MATERIAL_PIGMENTADO: {code: 409, message: "No hay suficiente material pigmentado para realizar esta acción"},
   // ERRORES EN AVANCES DE TURNO
   AVANCE_TURNO_NO_ENCONTRADO: {code: 404, message: "Avance no encontrado"},
   ORDEN_NO_DISPONIBLE_PARA_AVANCE: {code: 409, message: "No puedes abrir avance de esta orden"},
@@ -63,7 +74,16 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   // ERRORES DE ENCARGADO PIGMENTO
   SOLICITUD_MATERIAL_NO_ENCONTRADA: {code: 404, message: "Solicitud no encontrada"},
   SOLICITUD_MATERIAL_YA_CONFIRMADA: {code: 409, message: "Esta solicitud ya ha sido confirmada"},
-  ORDEN_SIN_MOLIDO_ASIGNADO: {code: 409, message: "Se solicita molido, pero la orden no indica qué tipo de molido usar"}
+  ORDEN_SIN_MOLIDO_ASIGNADO: {code: 409, message: "Se solicita molido, pero la orden no indica qué tipo de molido usar"},
+  // ERRORES DE PEDIDOS
+  PEDIDO_NO_ENCONTRADO: { code: 404, message: "Pedido no encontrado"},
+  PEDIDO_NUMERO_YA_EXISTE: { code: 409, message: "Ya existe un pedido con el mismo número"},
+  PEDIDO_CANCELADO: { code: 409, message: "Pedido cancelado, no puedes editarlo"},
+  PEDIDO_NO_SE_PUEDE_CANCELAR: { code: 409, message: "El pedido no se puede cancelar"},
+  PEDIDO_TIENE_ORDENES_EN_PROGRESO: { code: 409, message: "El pedido tiene ordenes en progreso"},
+  PEDIDO_NO_SE_PUEDE_MODIFICAR: { code: 409, message: "El pedido ya no se puede modificar"},
+  // ERRORES DE LINEA (PEDIDODETALLE)
+  PEDIDO_DETALLE_NO_ENCONTRADO: {code: 404, message: "Detalle de pedido no encontrado"},
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

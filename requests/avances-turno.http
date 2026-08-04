@@ -29,7 +29,7 @@ Content-Type: application/json
 }
 
 ### Activar la orden (reemplaza el id real de la orden creada)
-PATCH {{baseUrl}}/ordenes/3/activar
+PATCH {{baseUrl}}/ordenes/4/activar
 
 ### ============ LOGIN COMO SUPERVISOR ============
 
@@ -50,7 +50,7 @@ POST {{baseUrl}}/avances-turno
 Content-Type: application/json
 
 {
-  "ordenId": "1",
+  "ordenId": "4",
   "turno": "MANANA",
   "fecha": "2026-07-28",
   "horaInicio": "2026-07-28T06:00:00Z"
@@ -64,14 +64,14 @@ POST {{baseUrl}}/avances-turno
 Content-Type: application/json
 
 {
-  "ordenId": "3",
+  "ordenId": "1",
   "turno": "TARDE",
   "fecha": "2026-07-28",
   "horaInicio": "2026-07-28T14:00:00Z"
 }
 
 ### Guardar borrador (actualizar sin cerrar) — reemplaza el id del avance
-PATCH {{baseUrl}}/avances-turno/4
+PATCH {{baseUrl}}/avances-turno/1
 Content-Type: application/json
 
 {
@@ -91,16 +91,16 @@ Content-Type: application/json
 }
 
 ### Cerrar el avance correctamente (no completa la orden: 500 de 1000)
-PATCH {{baseUrl}}/avances-turno/5/cerrar
+PATCH {{baseUrl}}/avances-turno/2/cerrar
 Content-Type: application/json
 
 {
   "horaFin": "2026-07-28T14:00:00Z",
-  "piezasBuenas": 0,
-  "piezasDefectuosas": 0,
-  "kgMerma": 0,
+  "piezasBuenas": 200,
+  "piezasDefectuosas": 20,
+  "kgMerma": 2,
   "kgPlasta": 2,
-  "kgSobrante": 3,
+  "kgSobrante": 0,
   "observaciones": "Turno cerrado sin incidencias"
 }
 

@@ -390,6 +390,8 @@ model PedidoDetalle {
 
   createdAt   DateTime @default(now())
 
+  orden    OrdenProduccion[]
+
   @@map("pedido_detalle")
 }
 
@@ -398,6 +400,7 @@ model Pedido {
 
   numeroPedido    String       @unique
   cliente         String
+  remision        String?
   descripcion     String?      // notas generales, ya no el detalle de productos
 
   estado          EstadoPedido @default(PENDIENTE)
@@ -407,7 +410,6 @@ model Pedido {
   updatedAt       DateTime     @updatedAt
 
   detalle         PedidoDetalle[]
-  ordenes         OrdenProduccion[]
 
   @@map("pedidos")
 }
@@ -445,14 +447,13 @@ model OrdenProduccion {
   producto   Producto @relation(fields: [productoId], references: [id])
 
   totalPiezas    Int
-  clienteDestino String?
-  remision       String?
   observaciones  String?
 
   tipoMaterial TipoMaterialOrden
 
-  pedidoId BigInt?
-  pedido   Pedido? @relation(fields: [pedidoId], references: [id])
+  // pedidoDetalle relaciona explicitamente una orden con una linea de detalle de un pedido
+  pedidoDetalleId BigInt
+  pedidoDetalle   PedidoDetalle @relation(fields: [pedidoDetalleId], references: [id])
 
   // Material virgen — siempre presente, incluso en mezcla
   materiaPrimaId BigInt

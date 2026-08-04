@@ -22,14 +22,12 @@ export const crearOrdenBodySchema = Type.Union([
   Type.Object({
     tipoMaterial: Type.Literal("VIRGEN"),
     folio: Type.String({ minLength: 1, maxLength: 50 }),
-    pedidoId: Type.Optional(Type.String()),
+    pedidoDetalleId: Type.String(),
     productoId: Type.String(),
     materiaPrimaId: Type.String(),
     pigmentoId: Type.String(),
     maquinaId: Type.String(),
     totalPiezas: Type.Integer({ minimum: 1 }),
-    clienteDestino: Type.Optional(Type.String({ maxLength: 150 })),
-    remision: Type.Optional(Type.String({ maxLength: 50 })),
     observaciones: Type.Optional(Type.String({ maxLength: 300 })),
     aditivoDescripcion: Type.Optional(Type.String({ maxLength: 200 })),
   }),
@@ -39,7 +37,7 @@ export const crearOrdenBodySchema = Type.Union([
       Type.Literal("MEZCLA_RECICLADO"),
     ]),
     folio: Type.String({ minLength: 1, maxLength: 50 }),
-    pedidoId: Type.Optional(Type.String()),
+    pedidoDetalleId: Type.String(),
     productoId: Type.String(),
     materiaPrimaId: Type.String(),
     pigmentoId: Type.String(),
@@ -48,8 +46,6 @@ export const crearOrdenBodySchema = Type.Union([
     inventarioMolidoId: Type.String(),
     porcentajeVirgen: Type.Number({ minimum: 0, maximum: 100 }),
     porcentajeMolido: Type.Number({ minimum: 0, maximum: 100 }),
-    clienteDestino: Type.Optional(Type.String({ maxLength: 150 })),
-    remision: Type.Optional(Type.String({ maxLength: 50 })),
     observaciones: Type.Optional(Type.String({ maxLength: 300 })),
     aditivoDescripcion: Type.Optional(Type.String({ maxLength: 200 })),
   }),
@@ -82,11 +78,13 @@ export const ordenResponseSchema = Type.Object({
   id: Type.String(),
   folio: Type.String(),
   estado: estadoOrdenSchema,
+  pedidoDetalleId: Type.String(),
+  pedidoId: Type.String(),
+  pedidoNumero: Type.String(),
+  cliente: Type.String(),
   productoId: Type.String(),
   productoNombre: Type.String(),
   totalPiezas: Type.Integer(),
-  clienteDestino: Type.Union([Type.String(), Type.Null()]),
-  remision: Type.Union([Type.String(), Type.Null()]),
   observaciones: Type.Union([Type.String(), Type.Null()]),
   tipoMaterial: tipoMaterialOrdenSchema,
   materiaPrimaId: Type.String(),
@@ -125,3 +123,10 @@ export const cambiarEstadoOrdenBodySchema = Type.Object({
 });
 
 export type CambiarEstadoOrdenBody = Static<typeof cambiarEstadoOrdenBodySchema>;
+
+export const sustituirMaterialPigmentadoBodySchema = Type.Object({
+  combinacionMaterialPigmentadoId: Type.String(),
+  kgSustituidos: Type.Number({ exclusiveMinimum: 0 }),
+});
+
+export type SustituirMaterialPigmentadoBody = Static<typeof sustituirMaterialPigmentadoBodySchema>;

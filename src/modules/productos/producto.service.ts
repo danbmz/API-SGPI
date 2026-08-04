@@ -3,7 +3,7 @@ import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import { compararCambios } from "../../utils/comparar-cambios.js";
 import type { AuthUser } from "../../types/fastify.js";
 import type { CrearProductoBody, EditarProductoBody } from "./producto.schema.js";
-import type { TipoMaterial } from "../../../prisma/generated/prisma/client/enums.js";
+import { TipoMaterial } from "../../../prisma/generated/prisma/client/enums.js";
 
 function serializar(producto: {
   id: bigint;
@@ -25,6 +25,7 @@ function serializar(producto: {
     nombre: producto.nombre,
     codigo: producto.codigo,
     tipo: producto.tipo,
+    TipoMaterial: producto.tipoMaterial,
     cavidades: producto.cavidades,
     ciclo: producto.ciclo,
     peso: Number(producto.peso),

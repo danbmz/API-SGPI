@@ -176,7 +176,7 @@ export async function cerrarAvanceTurno(
 ) {
   const avance = await prisma.avanceTurno.findUnique({
     where: { id },
-    include: { orden: true },
+    include: { orden: { include: { pedidoDetalle: true } } },
   });
   if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
   if (avance.supervisorId !== actor.id) throw new Error("AVANCE_TURNO_NO_PROPIO");
@@ -198,6 +198,9 @@ export async function cerrarAvanceTurno(
         kgPlasta: data.kgPlasta,
         ...(data.piezasCambioColor !== undefined && { piezasCambioColor: data.piezasCambioColor }),
         ...(data.kgSobrante !== undefined && { kgSobrante: data.kgSobrante }),
+        ...(data.tipoMaterialSobrante !== undefined && {
+          tipoMaterialSobrante: data.tipoMaterialSobrante,
+        }),
         ...(data.observaciones !== undefined && { observaciones: data.observaciones }),
       },
     });
@@ -227,6 +230,7 @@ export async function cerrarAvanceTurno(
     // asi accedemos al resultado de la suma, porque aggregate devuelve un objeto
     const totalPiezasBuenasAcumuladas = agregado._sum.piezasBuenas ?? 0;
     let ordenCompletada = false;
+    let pedidoCompletado = false;
 
     if (
       totalPiezasBuenasAcumuladas >= avance.orden.totalPiezas &&
@@ -237,9 +241,36 @@ export async function cerrarAvanceTurno(
         data: { estado: "COMPLETADA" },
       });
       ordenCompletada = true;
+
+    // ---------- Verificar si TODO el pedido se completa con esto ----------
+      const pedidoId = avance.orden.pedidoDetalle.pedidoId;
+
+      const detallesDelPedido = await tx.pedidoDetalle.findMany({
+        where: { pedidoId },
+        include: { orden: true },
+      });
+
+      // Aplanamos en un solo arreglo todos los arreglos de pedidoDetalle que componen un pedido, que a su vez contienen ordenes
+      const todasLasOrdenes = detallesDelPedido.flatMap((d) => d.orden);
+
+      // "Completo" significa: hay al menos una orden por línea, y todas las que existen están COMPLETADA.
+      // (una línea sin ninguna orden todavía no cuenta como cubierta)
+      const todoCubierto =
+        todasLasOrdenes.length > 0 &&
+        todasLasOrdenes.every(
+          (o) => o.estado === "COMPLETADA" || o.id === avance.ordenId // la actual ya se actualizó arriba, en memoria sigue con estado viejo
+        );
+
+      if (todoCubierto) {
+        const pedido = await tx.pedido.findUniqueOrThrow({ where: { id: pedidoId } });
+        if (pedido.estado !== "COMPLETADO" && pedido.estado !== "CANCELADO") {
+          await tx.pedido.update({ where: { id: pedidoId }, data: { estado: "COMPLETADO" } });
+          pedidoCompletado = true;
+        }
+      }
     }
 
-    return { ordenCompletada, totalPiezasBuenasAcumuladas };
+    return { ordenCompletada, pedidoCompletado, totalPiezasBuenasAcumuladas };
   });
 
   await registrarAccion({
@@ -251,7 +282,9 @@ export async function cerrarAvanceTurno(
     entidad: "avance_turno",
     entidadId: id,
     ...(resultado.ordenCompletada && {
-      detalle: `Orden completada automáticamente (${resultado.totalPiezasBuenasAcumuladas}/${avance.orden.totalPiezas} piezas)`,
+      detalle: `Orden completada automáticamente (${resultado.totalPiezasBuenasAcumuladas}/${avance.orden.totalPiezas} piezas)${
+        resultado.pedidoCompletado ? " — pedido completado también" : ""
+      }`,
     }),
     ...(ip !== undefined && { ip }),
   });

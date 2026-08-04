@@ -28,6 +28,7 @@ Content-Type: application/json
   "peso": 185,
   "piezasPorEmpaque": 100,
   "precio": 7.14,
+  "tipoMaterial": "POLIPROPILENO",
   "descripcion": "Jarra Walmart"
 }
 
@@ -36,13 +37,16 @@ POST {{baseUrl}}/productos
 Content-Type: application/json
 
 {
-  "nombre": "Duplicado de prueba",
+  "nombre": "Jarra 2L",
   "codigo": "7501000001",
   "tipo": "Jarra",
-  "materiaPrimaId": "1",
-  "cavidades": 1,
-  "ciclo": 20,
-  "peso": 100
+  "cavidades": 2,
+  "ciclo": 28,
+  "peso": 185,
+  "piezasPorEmpaque": 100,
+  "precio": 7.14,
+  "tipoMaterial": "POLIPROPILENO",
+  "descripcion": "Jarra Walmart"
 }
 
 ### Crear con datos faltantes — debe fallar con 400
@@ -105,13 +109,14 @@ Content-Type: application/json
 
 {
   "nombre": "Jarra 2L",
-  "codigo": "7501000011",
+  "codigo": "7501000001",
   "tipo": "Jarra",
   "cavidades": 2,
   "ciclo": 28,
   "peso": 185,
   "piezasPorEmpaque": 100,
   "precio": 7.14,
+  "tipoMaterial": "POLIPROPILENO",
   "descripcion": "Jarra Walmart"
 }
 

@@ -1,0 +1,164 @@
+### pedidos.http
+
+@baseUrl = http://localhost:3000
+
+### Login como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Listar pedidos — vacío al inicio
+GET {{baseUrl}}/pedidos
+
+### Listar ordens 
+GET {{baseUrl}}/ordenes
+
+### Crear pedido
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "numeroPedido": "PED-2026-003",
+  "cliente": "Comercializadora del Valle",
+  "descripcion": "Pedido de jarras y tapas para entrega en octubre"
+}
+
+### Intentar crear con el mismo número — debe fallar con 409
+POST {{baseUrl}}/pedidos
+Content-Type: application/json
+
+{
+  "numeroPedido": "PED-2026-001",
+  "cliente": "Otro cliente"
+}
+
+### Ver el pedido creado (reemplaza el id real)
+GET {{baseUrl}}/pedidos/3
+
+### Agregar línea de detalle — Jarra 2L Roja (ajusta productoId y pigmentoId)
+POST {{baseUrl}}/pedidos/3/detalle
+Content-Type: application/json
+
+{
+  "productoId": "1",
+  "pigmentoId": "1",
+  "cantidadSolicitada": 1000
+}
+
+### Agregar línea de detalle — sin pigmento específico (ajusta productoId)
+POST {{baseUrl}}/pedidos/2/detalle
+Content-Type: application/json
+
+{
+  "productoId": "1",
+  "cantidadSolicitada": 200
+}
+
+### Ver el pedido con su detalle completo
+GET {{baseUrl}}/pedidos/1
+
+### Editar pedido (cambiar cliente/descripción)
+PATCH {{baseUrl}}/pedidos/1
+Content-Type: application/json
+
+{
+  "descripcion": "Pedido actualizado: incluye jarras rojas y sin color"
+}
+
+### Agregar detalle con producto inexistente — debe fallar con 404
+POST {{baseUrl}}/pedidos/1/detalle
+Content-Type: application/json
+
+{
+  "productoId": "9999",
+  "cantidadSolicitada": 100
+}
+
+### Crear una orden ligada a este pedido (ajusta los IDs reales)
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-PED-09",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 500,
+  "pedidoId": "3"
+}
+
+### Ver el pedido — debe reflejar la orden asociada y el progreso de la línea
+GET {{baseUrl}}/pedidos/2
+
+### Intentar crear una orden con pedidoId Y clienteDestino a la vez — debe fallar con 400/409
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "folio": "OP-2026-PED-02",
+  "productoId": "1",
+  "materiaPrimaId": "1",
+  "pigmentoId": "1",
+  "maquinaId": "1",
+  "totalPiezas": 100,
+  "pedidoId": "1",
+  "clienteDestino": "STOCK"
+}
+
+### Intentar cancelar el pedido (tiene una orden ACTIVA/BORRADOR, aún no en progreso — debería funcionar)
+PATCH {{baseUrl}}/pedidos/2/cancelar
+Content-Type: application/json
+
+{
+  "motivo": "Cliente canceló el pedido completo"
+}
+
+### Verificar que el pedido quedó cancelado
+GET {{baseUrl}}/pedidos/2
+
+### Intentar editar un pedido ya cancelado — debe fallar con 409
+PATCH {{baseUrl}}/pedidos/2
+Content-Type: application/json
+
+{
+  "descripcion": "No debería poder editarse"
+}
+
+### Intentar agregar detalle a un pedido cancelado — debe fallar con 409
+POST {{baseUrl}}/pedidos/2/detalle
+Content-Type: application/json
+
+{
+  "productoId": "1",
+  "cantidadSolicitada": 50
+}
+
+### ============ PRUEBA DE ROL ============
+
+### Login como supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "nuevaPassword456"
+}
+
+### Supervisor NO puede ver pedidos — debe fallar con 403
+GET {{baseUrl}}/pedidos
+
+### Volver a loguear como admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}

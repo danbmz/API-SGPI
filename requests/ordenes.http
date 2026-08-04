@@ -17,7 +17,7 @@ GET {{baseUrl}}/ordenes
 ### Ver estado del inventario antes de crear la orden (para comparar después)
 GET {{baseUrl}}/inventario/materias-primas
 
-###
+### Ver estado de inventario pigmentos
 GET {{baseUrl}}/inventario/pigmentos
 
 ### Crear orden 100% virgen (ajusta los IDs a los reales de tu base)

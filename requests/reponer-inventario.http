@@ -51,7 +51,7 @@ Content-Type: application/json
 
 {
   "tipoInventario": "PIGMENTO",
-  "pigmentoId": "1",
+  "pigmentoId": "2",
   "cantidad": 100,
   "descripcion": "Reposición de stock para pruebas"
 }
