@@ -20,12 +20,15 @@ POST {{baseUrl}}/pigmentos
 Content-Type: application/json
 
 {
-  "color": "Amarillo",
-  "categoriaColor": "SOLIDO",
-  "tipo": "MASTER",
+  "color": "Verde agua",
+  "categoriaColor": "NEON_TRASLUCIDO",
+  "tipo": "POLVO",
   "dosisGrPorKg": 21,
-  "tipoMaterial": "POLIPROPILENO",
-  "stockMinimo": 5
+  "tipoMaterial": "POLIESTIRENO",
+  "costoUnitario": 4,
+  "colorSolidoId": "1",
+  "stockMinimo": 5,
+  "stockActual": 80
 }
 
 ### Crear pigmento — Rojo Sólido Master, para Polipropileno
@@ -63,16 +66,16 @@ Content-Type: application/json
   "categoriaColor": "SOLIDO",
   "tipo": "MASTER",
   "dosisGrPorKg": 21,
-  "tipoMaterial": "POLI",
+  "tipoMaterial": "POLIESTIRENO_CRISTAL",
   "stockMinimo": 0
 }
 
-### Editar pigmento (reemplaza el 1 por el id real del Amarillo creado arriba)
-PATCH {{baseUrl}}/pigmentos/1
+### Editar pigmento (solo podemos editar dosisxKg y sctockMinimo)
+PATCH {{baseUrl}}/pigmentos/6
 Content-Type: application/json
 
 {
-  "dosisGrPorKg": 22
+  "dosisGrPorKg": 3
 }
 
 ### Desactivar pigmento
@@ -101,7 +104,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar (debe dar 200)

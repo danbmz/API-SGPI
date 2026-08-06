@@ -97,7 +97,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar (debe dar 200)

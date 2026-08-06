@@ -17,6 +17,8 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   PIGMENTO_YA_EXISTE: { code: 409, message: "El pigmento ya existe"},
   PIGMENTO_YA_INACTIVO: { code: 409, message: "El pigmento ya está desactivado"},
   PIGMENTO_YA_ACTIVO:{code: 409, message: "El pigmento ya está activo"},
+  PIGMENTO_SIN_COLOR_SOLIDO_ASIGNADO: {code: 409, message: "Pigmento sin color sólido asignado"},
+
   // ERRORES PRODUCTOS
   PRODUCTO_NO_ENCONTRADO: {code: 404, message: "Producto no encontrado"}, 
   PRODUCTO_YA_EXISTE: { code: 409, message: "Producto ya registrado"},
@@ -30,6 +32,7 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   // ERRORES MOTIVOS PARO
   MOTIVO_PARO_NO_ENCONTRADO: {code: 404, message: "Motivo no encontrado"},
   MOTIVO_PARO_YA_EXISTE: {code: 409, message: "Este motivo ya existe"},
+  MOTIVO_PARO_INACTIVO: {code: 409, message: "Este motivo se encuentra desactivado"},
   MOTIVO_PARO_YA_INACTIVO: {code: 409, message: "El motivo ya está desactivado"},
   MOTIVO_PARO_YA_ACTIVO: {code: 409, message: "El motivo ya está activo"},
   // ERRORES COLORES SOLIDOS
@@ -52,6 +55,7 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   MATERIAL_INCOMPATIBLE_CON_PRODUCTO: {code: 409, message: "Materia prima incompatible con el producto"},
   PIGMENTO_INCOMPATIBLE_CON_MATERIAL: {code: 409, message: "Pigmento incompatible con materia prima"},
   MOLIDO_INCOMPATIBLE_CON_MATERIAL: { code: 409, message: "El molido debe ser del mismo tipo que la materia prima"},
+  MOLIDO_INCOMPATIBLE_CON_COLOR_PIGMENTO: {code: 409, message: "El molido no es compatible con el color que indica el pedido"},
   PRODUCTO_NO_COINCIDE_CON_DETALLE: { code: 409, message: "El producto elegido no coincide con el definido en el detalle del pedido"},
   PIGMENTO_NO_COINCIDE_CON_DETALLE: { code: 409, message: "El pigmento seleccionado no coincide con el definido en el detalle del pedido"},
   ORDEN_NO_ACTIVA_PARA_SUSTITUCION: {code: 409, message: "Orden no activa"},
@@ -79,6 +83,10 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   INCIDENCIA_NO_ES_PARA_MOLINO: {code: 409, message: "Los productos no se mandaron a molino"},
   INCIDENCIA_YA_CONFIRMADA_MOLINO: {code: 409, message: "Productos mal pigmentados ya confirmados"},
   INCIDENCIA_YA_RESUELTA: {code: 409, message: "Ya se repimento el material"},
+  // ERRORES DE ENCARGADO MOLINO
+  MOLIENDA_SIN_ITEMS: {code: 409, message: "No hay nada que moler"},
+  AVANCE_NO_DISPONIBLE_PARA_MOLIENDA: { code: 409, message: "Avance no confirmado o ya fue incluida en una molienda anterior"},
+  INCIDENCIA_NO_DISPONIBLE_PARA_MOLIENDA: {code: 409, message: "Incidencia no confirmada o ya fue incluida en una molienda anterior"},
   // ERRORES DE PEDIDOS
   PEDIDO_NO_ENCONTRADO: { code: 404, message: "Pedido no encontrado"},
   PEDIDO_NUMERO_YA_EXISTE: { code: 409, message: "Ya existe un pedido con el mismo número"},
@@ -95,11 +103,11 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   OPERADOR_YA_EXISTE: {code: 409, message: "Ya existe un operador con el mismo nombre"},
   OPERADOR_YA_INACTIVO: {code: 409, message: "El operador ya está desactivado"},
   OPERADOR_YA_ACTIVO: {code: 409, message: "El operador ya está activado"},
-  OPERADOR_INACTIVO: {code: 409, message: "El operador ya está inactivo"},
+  OPERADOR_INACTIVO: {code: 409, message: "El operador ya está desativado"},
   // ERRORES DE CATALOGO DEFECTOS
   DEFECTO_NO_ENCONTRADO: {code: 404, message: "Defecto no encontrado"},
   DEFECTO_YA_EXISTE: {code: 409, message: "Este defecto ya existe"},
-  DEFECTO_INACTIVO: {code: 409, message: "El defecto ya está inactivo"},
+  DEFECTO_INACTIVO: {code: 409, message: "El defecto ya está desactivado"},
   DEFECTO_YA_ACTIVO: {code: 409, message: "El defecto ya está activo"}
 };
 

@@ -19,7 +19,8 @@ POST {{baseUrl}}/motivos-paro
 Content-Type: application/json
 
 {
-  "nombre": "Cambio de color"
+  "nombre": "Fallo de luz",
+  "categoria": "OTROS"
 }
 
 ### Crear motivo — Falla de máquina
@@ -72,7 +73,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar (debe dar 200)

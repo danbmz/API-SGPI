@@ -1,7 +1,16 @@
 import { Type, type Static } from "@sinclair/typebox";
 
+const categoriaMotivoParoSchema = Type.Union([
+  Type.Literal("INICIO"),
+  Type.Literal("MATERIAL"),
+  Type.Literal("MOLDE"),
+  Type.Literal("MAQUINA"),
+  Type.Literal("OTROS"),
+])
+
 export const crearMotivoParoBodySchema = Type.Object({
   nombre: Type.String({ minLength: 1, maxLength: 100 }),
+  categoria: categoriaMotivoParoSchema,
 });
 
 export type CrearMotivoParoBody = Static<typeof crearMotivoParoBodySchema>;
@@ -21,6 +30,7 @@ export type MotivoParoParams = Static<typeof motivoParoParamsSchema>;
 export const motivoParoResponseSchema = Type.Object({
   id: Type.String(),
   nombre: Type.String(),
+  categoria: categoriaMotivoParoSchema,
   activo: Type.Boolean(),
 });
 

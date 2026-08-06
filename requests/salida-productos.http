@@ -1,0 +1,67 @@
+### salida-productos.http
+
+@baseUrl = http://localhost:3000
+
+### Login admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "admin123"
+}
+
+### Ver stock actual de productos antes de la salida
+GET {{baseUrl}}/inventario/productos
+
+### ============ SALIDA POR ENTREGA DE PEDIDO ============
+
+### Entregar pedido (ajusta pedidoId, productoId, pigmentoId a los reales)
+POST {{baseUrl}}/inventario/salida-producto
+Content-Type: application/json
+
+{
+  "motivo": "ENTREGA_PEDIDO",
+  "pedidoId": "1",
+  "items": [
+    { "productoId": "1", "pigmentoId": "1", "cantidad": 300 },
+    { "productoId": "1", "pigmentoId": "2", "cantidad": 100 }
+  ],
+  "descripcion": "Entrega parcial del pedido PED-2026-001"
+}
+
+### Verificar que bajó el inventario
+GET {{baseUrl}}/inventario/productos
+
+### Intentar entregar sin indicar pedidoId — debe fallar con 409
+POST {{baseUrl}}/inventario/salida-producto
+Content-Type: application/json
+
+{
+  "motivo": "ENTREGA_PEDIDO",
+  "items": [{ "productoId": "1", "pigmentoId": "1", "cantidad": 10 }]
+}
+
+### Intentar entregar un producto que no pertenece al pedido — debe fallar con 409
+POST {{baseUrl}}/inventario/salida-producto
+Content-Type: application/json
+
+{
+  "motivo": "ENTREGA_PEDIDO",
+  "pedidoId": "1",
+  "items": [{ "productoId": "99", "pigmentoId": "1", "cantidad": 10 }]
+}
+
+### ============ SALIDA POR VENTA DIRECTA (sin pedido) ============
+
+POST {{baseUrl}}/inventario/salida-producto
+Content-Type: application/json
+
+{
+  "motivo": "VENTA",
+  "items": [{ "productoId": "1", "pigmentoId": "1", "cantidad": 20 }],
+  "descripcion": "Venta directa a cliente de mostrador"
+}
+
+### Verificar el historial de estos movimientos
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=PRODUCTO&productoId=1

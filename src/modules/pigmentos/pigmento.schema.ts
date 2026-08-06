@@ -26,8 +26,10 @@ export const crearPigmentoBodySchema = Type.Object({
   categoriaColor: categoriaColorPigmentoSchema,
   tipo: tipoPigmentoSchema,
   tipoMaterial: tipoMaterialSchema,
+  colorSolidoId: Type.Optional(Type.String()), // opcional (solo para categoria SOLIDO)
   dosisGrPorKg: Type.Number({ minimum: 0 }),
   stockMinimo: Type.Number({ minimum: 0, default: 0 }),
+  stockActual: Type.Number({ minimum: 0, default: 0 }),
   costoUnitario: Type.Optional(Type.Number({ minimum: 0 })),
   // Falta codigo
   // Unidad medida y proveedor?
@@ -36,10 +38,13 @@ export const crearPigmentoBodySchema = Type.Object({
 export type CrearPigmentoBody = Static<typeof crearPigmentoBodySchema>;
 
 // ---------- Editar ----------
-// "categoriaColor, tipo, tipoMaterual y color" no están porque la combinación que define la identidad del pigmento ([tipoMaterial, color, categoriaColor, tipo]) no debería cambiar después de creado.
+// "categoriaColor, tipo y tipoMaterual" no están porque la combinación que define la identidad del pigmento ([tipoMaterial, color, categoriaColor, tipo]) no debería cambiar después de creado.
 export const editarPigmentoBodySchema = Type.Object({
+  color: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
   dosisGrPorKg: Type.Optional(Type.Number({ minimum: 0 })),
+  colorSolidoId: Type.Optional(Type.String()),
   stockMinimo: Type.Optional(Type.Number({ minimum: 0 })),
+  costoUnitario: Type.Optional(Type.Number({ minimum: 0 })),
 });
 
 export type EditarPigmentoBody = Static<typeof editarPigmentoBodySchema>;
@@ -61,9 +66,12 @@ export const pigmentoResponseSchema = Type.Object({
   tipo: tipoPigmentoSchema,
   dosisGrPorKg: Type.Number(),
   tipoMaterial: tipoMaterialSchema,
+  colorSolidoId: Type.Union([Type.String(), Type.Null()]),
+  colorSolidoNombre: Type.Union([Type.String(), Type.Null()]),
   activo: Type.Boolean(),
-  // stockActual: Type.Integer(),
-  // stockMinimo: Type.Integer(),
+  costoUnitario: Type.Union([Type.Number(), Type.Null()]),
+  stockActual: Type.Number(),
+  stockMinimo: Type.Number(),
 });
 
 export const listaPigmentoResponseSchema = Type.Array(pigmentoResponseSchema);

@@ -38,7 +38,6 @@ export type CancelarPedidoBody = Static<typeof cancelarPedidoBodySchema>;
 // ---------- Agregar línea de detalle ----------
 
 export const crearPedidoDetalleBodySchema = Type.Object({
-  pedidoId: Type.String(),
   productoId: Type.String(),
   pigmentoId: Type.Optional(Type.String()),
   cantidadSolicitada: Type.Integer({ exclusiveMinimum: 0 }),

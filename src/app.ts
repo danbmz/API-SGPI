@@ -19,6 +19,7 @@ import avanceTurnoRoutes from "./modules/avances-turno/avanceTurno.routes.js";
 import pedidoRoutes from "./modules/pedidos/pedido.routes.js";
 import operdaorRoutes from "./modules/operadores/operador.routes.js";
 import defectoProductoRoutes from "./modules/defectos/defecto.routes.js";
+import moliendaRoutes from "./modules/moliendas/molienda.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -43,6 +44,7 @@ export function buildApp() {
   app.register(pedidoRoutes)
   app.register(operdaorRoutes)
   app.register(defectoProductoRoutes)
+  app.register(moliendaRoutes)
 
   return app;
 }

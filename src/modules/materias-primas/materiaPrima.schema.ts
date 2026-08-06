@@ -24,6 +24,7 @@ export const crearMateriaPrimaBodySchema = Type.Object({
   unidadMedida: unidadMedidaSchema,
   costoUnitario: Type.Optional(Type.Number({ minimum: 0 })),
   stockMinimo: Type.Number({ minimum: 0, default: 0 }),
+  stockActual: Type.Number({ minimum: 0, default: 0 }),
 });
 
 export type CrearMateriaPrimaBody = Static<typeof crearMateriaPrimaBodySchema>;
@@ -57,6 +58,8 @@ export const materiaPrimaResponseSchema = Type.Object({
   proveedor: Type.Union([Type.String(), Type.Null()]),
   unidadMedida: unidadMedidaSchema,
   costoUnitario: Type.Union([Type.Number(), Type.Null()]),
+  stockActual: Type.Number(),
+  stockMinimo: Type.Number(),
   activo: Type.Boolean(),
 });
 

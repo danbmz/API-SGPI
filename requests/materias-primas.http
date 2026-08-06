@@ -19,13 +19,14 @@ POST {{baseUrl}}/materias-primas
 Content-Type: application/json
 
 {
-  "nombre": "Polipropileno Virgen",
-  "codigoInterno": "JU-PVL1",
+  "nombre": "Polipropileno Taquero",
+  "codigoInterno": "JU-PVL4",
   "tipo": "POLIPROPILENO",
   "proveedor": "Braskem",
   "unidadMedida": "KILOGRAMO",
   "costoUnitario": 30,
-  "stockMinimo": 500
+  "stockMinimo": 500,
+  "stockActual": 2000
 }
 
 ### Crear materia prima — Poliestireno-Cristal Virgen
@@ -36,7 +37,7 @@ Content-Type: application/json
   "nombre": "Poliestireno-Cristal Virgen",
   "codigoInterno": "JU-PSC1",
   "tipo": "POLIESTIRENO",
-  "proveedor": "INEOS",
+  "proveedor": "BIMBO",
   "unidadMedida": "KILOGRAMO",
   "costoUnitario": 30,
   "stockMinimo": 500
@@ -55,22 +56,24 @@ Content-Type: application/json
 }
 
 ### Editar materia prima (reemplaza el 1 por el id real que regresó el create)
-PATCH {{baseUrl}}/materias-primas/2
+PATCH {{baseUrl}}/materias-primas/7
 Content-Type: application/json
 
 {
-  "nombre": "Poliestireno Virgen",
-  "costoUnitario": 32
+  "nombre": "Duplicado stock editado",
+  "costoUnitario": 32,
+  "proveedor": "Bimbo",
+  "stockMinimo": 340
 }
 
 ### Desactivar materia prima
-DELETE {{baseUrl}}/materias-primas/1
+DELETE {{baseUrl}}/materias-primas/7
 
 ### Intentar desactivarla de nuevo — debe fallar con 409
 DELETE {{baseUrl}}/materias-primas/1
 
 ### Reactivar materia prima
-PATCH {{baseUrl}}/materias-primas/1/reactivar
+PATCH {{baseUrl}}/materias-primas/7/reactivar
 
 ### Intentar reactivarla de nuevo — debe fallar con 409
 PATCH {{baseUrl}}/materias-primas/1/reactivar
@@ -92,7 +95,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar (debe dar 200)

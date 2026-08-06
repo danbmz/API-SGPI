@@ -1,0 +1,80 @@
+### pigmentos-flujos.http
+
+@baseUrl = http://localhost:3000
+
+### Login pigmentos
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "pigmentos01",
+  "password": "password123"
+}
+
+### ============ CONFIRMAR SOLICITUD DE MATERIAL ============
+
+### Confirmar solicitud virgen (ajusta el id de la solicitud creada por el supervisor)
+PATCH {{baseUrl}}/solicitudes-material/1/confirmar
+
+### Verificar que bajó materia prima Y pigmento
+GET {{baseUrl}}/inventario/materias-primas
+
+###
+GET {{baseUrl}}/inventario/pigmentos
+
+### Confirmar solicitud molido (ajusta el id)
+PATCH {{baseUrl}}/solicitudes-material/2/confirmar
+
+### Verificar que bajó el molido
+GET {{baseUrl}}/inventario/molido
+
+### ============ CONFIRMAR RECEPCIÓN DE INCIDENCIA (MOLINO YA LA CONFIRMÓ) ============
+### Nota: este paso lo hace MOLINO, no pigmentos — solo referencia aquí para saber el flujo completo
+
+### ============ RESOLVER INCIDENCIA MAL PIGMENTADO ============
+
+### Resolver agregando material virgen + pigmento (ajusta el id de la incidencia)
+PATCH {{baseUrl}}/incidencias-mal-pigmentado/1/resolver
+Content-Type: application/json
+
+{
+  "tipoMaterialAgregado": "VIRGEN",
+  "kgMaterialAgregado": 5,
+  "gramosPigmentoAgregado": 100
+}
+
+### Verificar la salida de materia prima y pigmento por REPIGMENTAR
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=MATERIA_PRIMA&materiaPrimaId=1
+
+### Intentar resolver la misma incidencia otra vez — debe fallar con 409
+PATCH {{baseUrl}}/incidencias-mal-pigmentado/1/resolver
+Content-Type: application/json
+
+{
+  "gramosPigmentoAgregado": 50
+}
+
+### ============ SUSTITUIR MATERIAL PIGMENTADO EN UNA ORDEN ============
+### (requiere una orden en estado ACTIVA, y que exista una CombinacionMaterialPigmentado
+###  con stock suficiente para ese material+pigmento)
+
+### Sustituir material pigmentado (ajusta el id de la orden y de la combinación)
+PATCH {{baseUrl}}/ordenes/1/sustituir-material-pigmentado
+Content-Type: application/json
+
+{
+  "combinacionMaterialPigmentadoId": "1",
+  "kgSustituidos": 10
+}
+
+### Verificar que la orden refleja la sustitución
+GET {{baseUrl}}/ordenes
+
+### Intentar sustituir de nuevo sobre la misma orden — debe fallar con 409
+PATCH {{baseUrl}}/ordenes/1/sustituir-material-pigmentado
+Content-Type: application/json
+
+{
+  "combinacionMaterialPigmentadoId": "1",
+  "kgSustituidos": 5
+}

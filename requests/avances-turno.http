@@ -39,7 +39,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Listar avances — vacío al inicio
@@ -50,9 +50,9 @@ POST {{baseUrl}}/avances-turno
 Content-Type: application/json
 
 {
-  "ordenId": "4",
+  "ordenId": "8",
   "turno": "MANANA",
-  "fecha": "2026-07-28",
+  "fecha": "2026-08-05",
   "horaInicio": "2026-07-28T06:00:00Z"
 }
 
@@ -64,9 +64,9 @@ POST {{baseUrl}}/avances-turno
 Content-Type: application/json
 
 {
-  "ordenId": "1",
+  "ordenId": "6",
   "turno": "TARDE",
-  "fecha": "2026-07-28",
+  "fecha": "2026-08-06",
   "horaInicio": "2026-07-28T14:00:00Z"
 }
 
@@ -91,16 +91,21 @@ Content-Type: application/json
 }
 
 ### Cerrar el avance correctamente (no completa la orden: 500 de 1000)
-PATCH {{baseUrl}}/avances-turno/2/cerrar
+PATCH {{baseUrl}}/avances-turno/7/cerrar
 Content-Type: application/json
 
 {
   "horaFin": "2026-07-28T14:00:00Z",
-  "piezasBuenas": 200,
-  "piezasDefectuosas": 20,
-  "kgMerma": 2,
-  "kgPlasta": 2,
-  "kgSobrante": 0,
+  "piezasBuenas": 500,
+  "piezasDefectuosas": 30,
+  "kgMerma": 3,
+  "kgPlasta": 4,
+  "operadorId": "1",
+  "cicloReal": 38,
+  "materialKG": 100,
+  "defectoId": "1",
+  "kgSobrante": 20,
+  "tipoMaterialSobrante": "MOLIDO",
   "observaciones": "Turno cerrado sin incidencias"
 }
 
@@ -176,19 +181,19 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "usuario": "molino02",
-  "password": "nuevaPassword456"
+  "usuario": "molino01",
+  "password": "password123"
 }
 
 ### Confirmar entrada a Molino (cantidad exacta o con diferencia)
-PATCH {{baseUrl}}/avances-turno/99/confirmar-molino 
+PATCH {{baseUrl}}/avances-turno/2/confirmar-molino 
 Content-Type: application/json
 
 {
-    "kgMermaRecibida": "500",
-    "kgPlastaRecibida": "2",
-    "piezasMalasRecibidas": "10",
-    "piezasCambioColorRecibidas": "0" 
+    "kgMermaRecibida": 6,
+    "kgPlastaRecibida": 4,
+    "piezasMalasRecibidas": 44,
+    "piezasCambioColorRecibidas": 0 
 }
 
 ### Login como Pigmentos
@@ -196,12 +201,12 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "usuario": "pigmento02",
-  "password": "pigmento123"
+  "usuario": "pigmentos01",
+  "password": "password123"
 }
 
 ### Confirmar sobrante (indicamos que si llego el material a Pigmentos)
-PATCH {{baseUrl}}/avances-turno/10/confirmar-sobrante
+PATCH {{baseUrl}}/avances-turno/7/confirmar-sobrante
 Content-Type: application/json
 
 {

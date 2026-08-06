@@ -37,7 +37,7 @@ Content-Type: application/json
 {
   "tipoInventario": "MATERIA_PRIMA",
   "materiaPrimaId": "1",
-  "cantidad": 2000,
+  "cantidad": 500,
   "descripcion": "Entrada de proveedor Braskem"
 }
 
@@ -47,7 +47,7 @@ Content-Type: application/json
 
 {
   "tipoInventario": "PIGMENTO",
-  "pigmentoId": "1",
+  "pigmentoId": "10",
   "cantidad": 300,
   "descripcion": "Entrada de proveedor de pigmento"
 }
@@ -58,10 +58,10 @@ Content-Type: application/json
 
 {
   "tipoInventario": "MOLIDO",
-  "tipoMaterial": "POLIPROPILENO",
-  "colorSolidoId": "2",
+  "tipoMaterial": "POLIESTIRENO",
+  "colorSolidoId": "5",
   "cantidad": 800,
-  "descripcion": "Compra de molido azul a otra fábrica"
+  "descripcion": "Compra de molido rojo a otra fábrica"
 }
 
 ### Entrada con materia prima inexistente — debe fallar con 404
@@ -81,7 +81,8 @@ Content-Type: application/json
 {
   "tipoInventario": "MATERIA_PRIMA",
   "materiaPrimaId": "1",
-  "cantidad": -50
+  "cantidad": -50,
+  "descripcion": "Polipropileno comprado"
 }
 
 ### ============ AJUSTE MANUAL ============
@@ -125,7 +126,7 @@ Content-Type: application/json
 
 {
   "tipoInventario": "MOLIDO",
-  "materiaPrimaId": "1",
+  "tipoMaterial": "POLIPROPILENO",
   "origen": "COMPRADO",
   "colorSolidoId": "2",
   "diferencia": 5,
@@ -138,7 +139,7 @@ Content-Type: application/json
 
 {
   "tipoInventario": "MATERIA_PRIMA",
-  "materiaPrimaId": "1",
+  "tipoMaterial": "POLIPROPILENO",
   "diferencia": 5
 }
 
@@ -148,7 +149,7 @@ Content-Type: application/json
 GET {{baseUrl}}/inventario/movimientos?tipoInventario=MATERIA_PRIMA&materiaPrimaId=1
 
 ### Historial completo de molido
-GET {{baseUrl}}/inventario/movimientos?tipoInventario=MOLIDO&materiaPrimaId=1
+GET {{baseUrl}}/inventario/movimientos?tipoInventario=MOLIDO&tipoMaterial=POLIPROPILENO
 
 ### Historial de pigmento con límite personalizado
 GET {{baseUrl}}/inventario/movimientos?tipoInventario=PIGMENTO&pigmentoId=1&limite=10
@@ -161,7 +162,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor NO puede listar inventario — debe fallar con 403 (todo el módulo es solo ADMIN)

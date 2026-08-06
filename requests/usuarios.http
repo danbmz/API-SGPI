@@ -26,34 +26,33 @@ POST {{baseUrl}}/usuarios
 Content-Type: application/json
 
 {
-  "nombre": "Gerardo",
-  "usuario": "molino01",
+  "nombre": "Mario",
+  "usuario": "supervisor02",
   "password": "nuevaPassword456",
-  "role": "MOLINO"
+  "role": "SUPERVISOR"
 }
 
 ### Editar usuario (reemplaza el 2 por el id real que te regresó el create)
-PATCH {{baseUrl}}/usuarios/3
+PATCH {{baseUrl}}/usuarios/5
 Content-Type: application/json
 
 {
-  "nombre": "Gerardo Contreras",
-  "role": "MOLINO"
+  "nombre": "Mario Castañeda"
 }
 
 ### Cambiar contraseña
-PATCH {{baseUrl}}/usuarios/3/password
+PATCH {{baseUrl}}/usuarios/5/password
 Content-Type: application/json
 
 {
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Desactivar usuario
 DELETE {{baseUrl}}/usuarios/5
 
 ### Reactivar al supervisor (reemplaza el 2 por el id real)
-PATCH {{baseUrl}}/usuarios/2/reactivar
+PATCH {{baseUrl}}/usuarios/5/reactivar
 
 ### Logout (para dejar la sesión limpia antes de la siguiente prueba)
 POST {{baseUrl}}/auth/logout

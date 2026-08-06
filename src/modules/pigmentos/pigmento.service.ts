@@ -12,7 +12,10 @@ function serializar(pigmento: {
   tipo: TipoPigmento;
   dosisGrPorKg: unknown;
   tipoMaterial: TipoMaterial;
+  colorSolidoId: bigint | null;
+  colorSolido: { nombre: string } | null;
   activo: boolean;
+  costoUnitario: unknown;
   inventario: { cantidadActual: unknown; stockMinimo: unknown } | null;
 }) {
 
@@ -23,15 +26,18 @@ function serializar(pigmento: {
     tipo: pigmento.tipo,
     dosisGrPorKg: Number(pigmento.dosisGrPorKg),
     tipoMaterial: pigmento.tipoMaterial,
+    colorSolidoId: pigmento.colorSolidoId ? pigmento.colorSolidoId.toString() : null,
+    colorSolidoNombre: pigmento.colorSolido ? pigmento.colorSolido.nombre : null,
     activo: pigmento.activo,
-    // stockActual: pigmento.inventario ? Number(pigmento.inventario.cantidadActual) : 0,
-    // stockMinimo: pigmento.inventario ? Number(pigmento.inventario.stockMinimo) : 0,
+    costoUnitario: pigmento.costoUnitario !== null ? Number(pigmento.costoUnitario) : null, // Null
+    stockActual: pigmento.inventario ? Number(pigmento.inventario.cantidadActual) : 0,
+    stockMinimo: pigmento.inventario ? Number(pigmento.inventario.stockMinimo) : 0,
   };
 }
 
 export async function listarPigmentos() {
   const pigmentos = await prisma.pigmento.findMany({
-    include: { inventario: true },
+    include: { inventario: true, colorSolido: true },
     orderBy: [{ color: "asc" }],
   });
   return pigmentos.map(serializar);
@@ -56,6 +62,14 @@ export async function crearPigmento(data: CrearPigmentoBody, actor: AuthUser, ip
     throw new Error("PIGMENTO_YA_EXISTE");
   }
 
+  // Si viene colorSolidoId validamos que exista
+  let colorSolidoId: bigint | undefined;
+  if (data.colorSolidoId !== undefined) {
+    colorSolidoId = BigInt(data.colorSolidoId);
+    const color = await prisma.colorSolido.findUnique({ where: { id: colorSolidoId } });
+    if (!color) throw new Error("COLOR_SOLIDO_NO_ENCONTRADO");
+  }
+
   const nuevo = await prisma.pigmento.create({
     data: {
       color: data.color,
@@ -63,14 +77,16 @@ export async function crearPigmento(data: CrearPigmentoBody, actor: AuthUser, ip
       tipo: data.tipo,
       dosisGrPorKg: data.dosisGrPorKg,
       tipoMaterial: data.tipoMaterial,
+      ...(colorSolidoId !== undefined && { colorSolidoId }),
+      ...(data.costoUnitario !== undefined && { costoUnitario: data.costoUnitario }),
       inventario: {
         create: {
-          cantidadActual: 0,
+          cantidadActual: data.stockActual,
           stockMinimo: data.stockMinimo,
         },
       },
     },
-    include: { inventario: true },
+    include: { inventario: true, colorSolido: true },
   });
 
   await registrarAccion({
@@ -105,8 +121,10 @@ export async function editarPigmento(
     where: { id },
     data: {
     // Hacemos esto porque los campos son opcionales y debemos verificar que si existe un valor (no undefined)
-      ...(data.stockMinimo !== undefined && { stockMinimo: data.stockMinimo }),
+      ...(data.color !== undefined && { color: data.color}),
+      ...(data.costoUnitario !== undefined && { costoUnitario: data.costoUnitario}),
       ...(data.dosisGrPorKg !== undefined && { dosisGrPorKg: data.dosisGrPorKg }),
+      ...(data.colorSolidoId !== undefined && { colorSolidoId: BigInt(data.colorSolidoId) }),
     },
   });
 
@@ -133,7 +151,7 @@ export async function editarPigmento(
 //   Devolvemos el registro ahora actualizado con los nuevos cambios
   const final = await prisma.pigmento.findUniqueOrThrow({
     where: { id },
-    include: { inventario: true },
+    include: { inventario: true, colorSolido: true },
   });
 
   return serializar(final);

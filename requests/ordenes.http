@@ -76,10 +76,10 @@ Content-Type: application/json
 }
 
 ### PRUEBAS DE CAMBIO DE ESTADO - Activar
-PATCH {{baseUrl}}/ordenes/2/activar
+PATCH {{baseUrl}}/ordenes/9/activar
 
 ### Pausar orden
-PATCH {{baseUrl}}/ordenes/2/pausar
+PATCH {{baseUrl}}/ordenes/4/pausar
 Content-Type: application/json
 
 {
@@ -87,7 +87,7 @@ Content-Type: application/json
 }
 
 ### Reanudar orden
-PATCH {{baseUrl}}/ordenes/2/reanudar
+PATCH {{baseUrl}}/ordenes/4/reanudar
 
 ### Cancelar orden activa (aún no iniciada)
 PATCH {{baseUrl}}/ordenes/2/cancelar
@@ -102,12 +102,12 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "usuario": "pigmento02",
-  "password": "pigmento123"
+  "usuario": "pigmentos01",
+  "password": "password123"
 }
 
 ### Confirmar material siguiente (reemplaza el 1 por el id real de la orden creada)
-PATCH {{baseUrl}}/ordenes/1/confirmar-material
+PATCH {{baseUrl}}/ordenes/8/confirmar-material
 
 ### Intentar confirmarlo de nuevo — debe fallar con 409
 PATCH {{baseUrl}}/ordenes/1/confirmar-material
@@ -121,7 +121,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar
@@ -133,12 +133,15 @@ Content-Type: application/json
 
 {
   "tipoMaterial": "VIRGEN",
-  "folio": "OP-2026-003",
+  "folio": "OP-2026-PED-12",
+  "pedidoDetalleId": "1",
   "productoId": "1",
   "materiaPrimaId": "1",
   "pigmentoId": "1",
   "maquinaId": "1",
-  "totalPiezas": 100
+  "totalPiezas": 1000,
+  "aditivoDescripcion": "Con aditivo",
+  "observaciones": "Orden con piezas de mas considerando merma"
 }
 
 ### Volver a loguear como admin

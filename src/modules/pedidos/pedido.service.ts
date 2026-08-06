@@ -8,6 +8,7 @@ import type {
   CancelarPedidoBody,
   CrearPedidoDetalleBody,
 } from "./pedido.schema.js";
+import { cancelarOrden } from "../ordenes/orden.service.js";
 
 const includeCompleto = {
   detalle: { include: { producto: true, pigmento: true, ordenes: true } },
@@ -145,7 +146,7 @@ export async function cancelarPedido(
 ) {
   const pedido = await prisma.pedido.findUnique({
     where: { id },
-    include: { detalle: { include: { orden: true } } },
+    include: { detalle: { include: { ordenes: true } } },
   });
   if (!pedido) throw new Error("PEDIDO_NO_ENCONTRADO");
   if (pedido.estado === "CANCELADO" || pedido.estado === "COMPLETADO") {
@@ -153,10 +154,24 @@ export async function cancelarPedido(
   }
 
   // Aplanamos el arreglo con flatMap para poder iterar todas las ordenes de cada detalle, juntas (como en la funcion serializar).
-  const todasLasOrdenes = pedido.detalle.flatMap((linea) => linea.orden);
+  const todasLasOrdenes = pedido.detalle.flatMap((linea) => linea.ordenes);
   const hayOrdenEnProgreso = todasLasOrdenes.some((o) => o.estado === "EN_PROGRESO");
   if (hayOrdenEnProgreso) {
     throw new Error("PEDIDO_TIENE_ORDENES_EN_PROGRESO");
+  }
+
+  // Cancelar cada orden que todavía esté "viva" (BORRADOR o ACTIVA)
+  const ordenesACancelar = todasLasOrdenes.filter(
+    (o) => o.estado === "BORRADOR" || o.estado === "ACTIVA"
+  );
+
+  for (const orden of ordenesACancelar) {
+    await cancelarOrden(
+      orden.id,
+      { motivo: `Cancelación automática: pedido ${pedido.numeroPedido} cancelado` },
+      actor,
+      ip
+    );
   }
 
   await prisma.pedido.update({ where: { id }, data: { estado: "CANCELADO" } });

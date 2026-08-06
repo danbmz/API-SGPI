@@ -19,7 +19,7 @@ POST {{baseUrl}}/colores-solidos
 Content-Type: application/json
 
 {
-  "nombre": "Rojo"
+  "nombre": "Blanco"
 }
 
 ### Crear color — Azul
@@ -71,11 +71,11 @@ Content-Type: application/json
 }
 
 ### Editar color (reemplaza el 1 por el id real que regresó el create)
-PATCH {{baseUrl}}/colores-solidos/1
+PATCH {{baseUrl}}/colores-solidos/7
 Content-Type: application/json
 
 {
-  "nombre": "Rojo Intenso"
+  "nombre": "Blanco"
 }
 
 ### Desactivar color
@@ -104,7 +104,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar (debe dar 200)

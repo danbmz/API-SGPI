@@ -62,7 +62,7 @@ export async function crearMateriaPrima(
       ...(data.costoUnitario !== undefined && { costoUnitario: data.costoUnitario }),
       inventarioVirgen: {
         create: {
-          cantidadActual: 0,
+          cantidadActual: data.stockActual,
           stockMinimo: data.stockMinimo,
         },
       },
@@ -99,14 +99,13 @@ export async function editarMateriaPrima(
     costoUnitario: "costo unitario",
   });
 
-  const actualizada = await prisma.materiaPrima.update({
+  await prisma.materiaPrima.update({
     where: { id },
     data: {
       ...(data.nombre !== undefined && { nombre: data.nombre }),
       ...(data.proveedor !== undefined && { proveedor: data.proveedor }),
       ...(data.costoUnitario !== undefined && { costoUnitario: data.costoUnitario }),
     },
-    include: { inventarioVirgen: true },
   });
 
   if (data.stockMinimo !== undefined) {

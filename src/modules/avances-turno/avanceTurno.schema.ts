@@ -38,7 +38,7 @@ export const actualizarAvanceTurnoBodySchema = Type.Object({
   kgSobrante: Type.Optional(Type.Number({ minimum: 0 })),
   tipoMaterialSobrante: Type.Optional(Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO")])),
   defectoId: Type.Optional(Type.String()),
-  defectoDescripcionOtro: Type.Optional(Type.String({ maxLength: 300 })),
+  descripcionOtro: Type.Optional(Type.String({ maxLength: 300 })),
   operadorId: Type.Optional(Type.String()),
   cicloReal: Type.Optional(Type.Integer({ exclusiveMinimum: 0 })),
   materialKG: Type.Optional(Type.Number({ minimum: 0 })),
@@ -62,7 +62,7 @@ export const cerrarAvanceTurnoBodySchema = Type.Object({
   kgSobrante: Type.Optional(Type.Number({ minimum: 0 })),
   tipoMaterialSobrante: Type.Optional(Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO")])),
   defectoId: Type.Optional(Type.String()),
-  defectoDescripcionOtro: Type.Optional(Type.String({ maxLength: 300 })),
+  descripcionOtro: Type.Optional(Type.String({ maxLength: 300 })),
   observaciones: Type.Optional(Type.String({ maxLength: 500 })),
 });
 
@@ -144,8 +144,8 @@ export const avanceTurnoResponseSchema = Type.Object({
   piezasDefectuosas: Type.Integer(),
   defectoId: Type.String(),
   defectoNombre: Type.String(),
-  cicloReal: Type.Integer(),
-  materialKG: Type.Number(),
+  cicloReal: Type.Union([Type.Integer(), Type.Null()]),
+  materialKG: Type.Union([Type.Integer(), Type.Null()]),
   kgMerma: Type.Number(),
   kgPlasta: Type.Number(),
   operadorId: Type.String(),
@@ -208,4 +208,25 @@ export const incidenciaResponseSchema = Type.Object({
   gramosPigmentoAgregado: Type.Union([Type.Number(), Type.Null()]),
 });
 
+// =========== SCHEMA DE TIEMPOS PARO =============
+
 export const listaIncidenciaResponseSchema = Type.Array(incidenciaResponseSchema);
+
+export const crearTiempoParoBodySchema = Type.Object({
+  motivoParoId: Type.String(),
+  minutos: Type.Integer({ exclusiveMinimum: 0 }),
+  observaciones: Type.Optional(Type.String({ maxLength: 300 })),
+});
+
+export type CrearTiempoParoBody = Static<typeof crearTiempoParoBodySchema>;
+
+export const tiempoParoResponseSchema = Type.Object({
+  id: Type.String(),
+  avanceTurnoId: Type.String(),
+  motivoParoId: Type.String(),
+  motivoParoNombre: Type.String(),
+  minutos: Type.Integer(),
+  observaciones: Type.Union([Type.String(), Type.Null()]),
+});
+
+export const listaTiempoParoResponseSchema = Type.Array(tiempoParoResponseSchema);

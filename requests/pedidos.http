@@ -17,12 +17,18 @@ GET {{baseUrl}}/pedidos
 ### Listar ordens 
 GET {{baseUrl}}/ordenes
 
+### Listar productos (cualquier usuario autenticado) — debería venir vacío al inicio
+GET {{baseUrl}}/productos
+
+### Listar Pigmentos
+GET {{baseUrl}}/pigmentos
+
 ### Crear pedido
 POST {{baseUrl}}/pedidos
 Content-Type: application/json
 
 {
-  "numeroPedido": "PED-2026-003",
+  "numeroPedido": "PED-2026-004",
   "cliente": "Comercializadora del Valle",
   "descripcion": "Pedido de jarras y tapas para entrega en octubre"
 }
@@ -37,32 +43,32 @@ Content-Type: application/json
 }
 
 ### Ver el pedido creado (reemplaza el id real)
-GET {{baseUrl}}/pedidos/3
+GET {{baseUrl}}/pedidos/4
 
 ### Agregar línea de detalle — Jarra 2L Roja (ajusta productoId y pigmentoId)
-POST {{baseUrl}}/pedidos/3/detalle
+POST {{baseUrl}}/pedidos/4/detalle
 Content-Type: application/json
 
 {
   "productoId": "1",
   "pigmentoId": "1",
-  "cantidadSolicitada": 1000
+  "cantidadSolicitada": 1500
 }
 
 ### Agregar línea de detalle — sin pigmento específico (ajusta productoId)
-POST {{baseUrl}}/pedidos/2/detalle
+POST {{baseUrl}}/pedidos/4/detalle
 Content-Type: application/json
 
 {
-  "productoId": "1",
-  "cantidadSolicitada": 200
+  "productoId": "4",
+  "cantidadSolicitada": 5000
 }
 
 ### Ver el pedido con su detalle completo
 GET {{baseUrl}}/pedidos/1
 
 ### Editar pedido (cambiar cliente/descripción)
-PATCH {{baseUrl}}/pedidos/1
+PATCH {{baseUrl}}/pedidos/3
 Content-Type: application/json
 
 {
@@ -70,12 +76,13 @@ Content-Type: application/json
 }
 
 ### Agregar detalle con producto inexistente — debe fallar con 404
-POST {{baseUrl}}/pedidos/1/detalle
+POST {{baseUrl}}/pedidos/3/detalle
 Content-Type: application/json
 
 {
-  "productoId": "9999",
-  "cantidadSolicitada": 100
+  "productoId": "4",
+  "pigmentoId": "100",
+  "cantidadSolicitada": 1500
 }
 
 ### Crear una orden ligada a este pedido (ajusta los IDs reales)
@@ -84,7 +91,8 @@ Content-Type: application/json
 
 {
   "tipoMaterial": "VIRGEN",
-  "folio": "OP-2026-PED-09",
+  "folio": "OP-2026-PED-01",
+  "pedidoDetalleId": "",
   "productoId": "1",
   "materiaPrimaId": "1",
   "pigmentoId": "1",
@@ -96,20 +104,40 @@ Content-Type: application/json
 ### Ver el pedido — debe reflejar la orden asociada y el progreso de la línea
 GET {{baseUrl}}/pedidos/2
 
-### Intentar crear una orden con pedidoId Y clienteDestino a la vez — debe fallar con 400/409
+### Crear una orden con virgen 100%
 POST {{baseUrl}}/ordenes
 Content-Type: application/json
 
 {
   "tipoMaterial": "VIRGEN",
-  "folio": "OP-2026-PED-02",
-  "productoId": "1",
+  "folio": "OP-2026-PED-10",
+  "pedidoDetalleId": "10",
+  "productoId": "4",
   "materiaPrimaId": "1",
-  "pigmentoId": "1",
-  "maquinaId": "1",
-  "totalPiezas": 100,
-  "pedidoId": "1",
-  "clienteDestino": "STOCK"
+  "pigmentoId": "5",
+  "maquinaId": "4",
+  "totalPiezas": 5000,
+  "observaciones": "Orden con piezas de mas considerando merma"
+}
+
+### Crear un pedido con MEZCLA - debe dar error por el pigmento y molido no coinciden
+POST {{baseUrl}}/ordenes
+Content-Type: application/json
+
+{
+  "tipoMaterial": "MEZCLA_MOLIDO_INTERNO",
+  "folio": "OP-2026-PED-08",
+  "pedidoDetalleId": "9",
+  "productoId": "2",
+  "materiaPrimaId": "4",
+  "pigmentoId": "6",
+  "maquinaId": "3",
+  "totalPiezas": 1000,
+  "inventarioMolidoId": "3",
+  "porcentajeVirgen": 30,
+  "porcentajeMolido": 70,
+  "aditivoDescripcion": "Con aditivo",
+  "observaciones": "Orden con piezas de mas considerando merma"
 }
 
 ### Intentar cancelar el pedido (tiene una orden ACTIVA/BORRADOR, aún no en progreso — debería funcionar)

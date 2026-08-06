@@ -1,0 +1,78 @@
+### molino-flujos.http
+
+@baseUrl = http://localhost:3000
+
+### Login molino
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "molino01",
+  "password": "password123"
+}
+
+### ============ CONFIRMACIÓN NORMAL DE AVANCE (merma/plasta) ============
+### (ya la habías probado antes, referencia rápida — ajusta el id del avance)
+
+PATCH {{baseUrl}}/avances-turno/1/confirmar-molino
+Content-Type: application/json
+
+{
+  "kgMermaRecibida": 3,
+  "kgPlastaRecibida": 4,
+  "piezasMalasRecibidas": 30,
+  "piezasCambioColorRecibidas": 0
+}
+
+### ============ CONFIRMAR RECEPCIÓN DE INCIDENCIA MAL PIGMENTADO ============
+
+### Confirmar que sí recibió las piezas mal pigmentadas (ajusta el id de la incidencia con destino MOLINO)
+PATCH {{baseUrl}}/incidencias-mal-pigmentado/2/confirmar-molino
+Content-Type: application/json
+
+{
+  "confirmado": true
+}
+
+### ============ LISTAR PENDIENTES DE MOLER ============
+
+GET {{baseUrl}}/moliendas/pendientes
+
+### ============ LISTAR MOLIENDAS EXISTENTES ============
+
+GET {{baseUrl}}/moliendas
+
+### ============ CREAR MOLIENDA ============
+### Ajusta avanceTurnoIds/incidenciaIds a los ids reales que salieron en /moliendas/pendientes
+
+POST {{baseUrl}}/moliendas
+Content-Type: application/json
+
+{
+  "tipoMaterial": "POLIPROPILENO",
+  "colorSolidoId": "1",
+  "kgIngresados": 12,
+  "fecha": "2026-08-05",
+  "observaciones": "Molienda de prueba",
+  "avanceTurnoIds": ["1"],
+  "incidenciaIds": ["2"]
+}
+
+### Verificar que entró al inventario de molido interno
+GET {{baseUrl}}/inventario/molido
+
+### Verificar que ya NO aparece en pendientes de moler (protección contra duplicado)
+GET {{baseUrl}}/moliendas/pendientes
+
+### Intentar crear otra molienda reusando el mismo avance — debe fallar con 409
+POST {{baseUrl}}/moliendas
+Content-Type: application/json
+
+{
+  "tipoMaterial": "POLIPROPILENO",
+  "colorSolidoId": "1",
+  "kgIngresados": 5,
+  "fecha": "2026-08-05",
+  "avanceTurnoIds": ["1"],
+  "incidenciaIds": []
+}

@@ -13,6 +13,8 @@ import {
   crearIncidenciaMalPigmentado,
   confirmarIncidenciaMolino,
   resolverIncidencia,
+  listarTiemposParo,
+  crearTiempoParo,
 } from "./avanceTurno.service.js";
 import {
   crearAvanceTurnoBodySchema,
@@ -34,6 +36,9 @@ import {
   incidenciaParamsSchema,
   confirmarIncidenciaMolinoBodySchema,
   resolverIncidenciaBodySchema,
+  listaTiempoParoResponseSchema,
+  crearTiempoParoBodySchema,
+  tiempoParoResponseSchema,
 } from "./avanceTurno.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -155,6 +160,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
       }
     );
 
+    // Incidencia de material mal pigmentado
     app.post(
       "/avances-turno/:id/incidencia-mal-pigmentado",
       {
@@ -173,6 +179,50 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
             request.ip
           );
           return reply.code(201).send(incidencia);
+        } catch (err) {
+          if (manejarErrorConocido(err, reply)) return;
+          throw err;
+        }
+      }
+    );
+
+    // ver tiempos paro de un avance
+    app.get(
+      "/avances-turno/:id/tiempos-paro",
+      {
+        schema: {
+          params: avanceTurnoParamsSchema,
+          response: { 200: listaTiempoParoResponseSchema },
+        },
+      },
+      async (request, reply) => {
+        return reply.send(await listarTiemposParo(BigInt(request.params.id)));
+      }
+    );
+
+    // registrar nuevo tiempo paro 
+    app.post(
+      "/avances-turno/:id/tiempos-paro",
+      {
+        schema: {
+          params: avanceTurnoParamsSchema,
+          body: crearTiempoParoBodySchema,
+          response: {
+            201: tiempoParoResponseSchema,
+            404: errorResponseSchema,
+            409: errorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const tiempo = await crearTiempoParo(
+            BigInt(request.params.id),
+            request.body,
+            request.authUser!,
+            request.ip
+          );
+          return reply.code(201).send(tiempo);
         } catch (err) {
           if (manejarErrorConocido(err, reply)) return;
           throw err;

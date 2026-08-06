@@ -120,7 +120,7 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
     throw new Error("PIGMENTO_INCOMPATIBLE_CON_MATERIAL");
   }
 
-  // Si hay mezcla, el molido también debe ser del mismo tipoMaterial
+  // Si hay mezcla, el molido también debe ser del mismo tipoMaterial y colorSolido
   if (data.tipoMaterial !== "VIRGEN") {
     const inventarioMolidoId = BigInt(data.inventarioMolidoId);
     const inventarioMolido = await prisma.inventarioMolido.findUnique({
@@ -130,6 +130,14 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
 
     if (inventarioMolido.tipoMaterial !== materiaPrima.tipo) {
       throw new Error("MOLIDO_INCOMPATIBLE_CON_MATERIAL");
+    }
+
+    // Nueva validación: el color del molido debe coincidir con el color sólido del pigmento
+    if (pigmento.colorSolidoId === null) {
+      throw new Error("PIGMENTO_SIN_COLOR_SOLIDO_ASIGNADO");
+    }
+    if (inventarioMolido.colorSolidoId !== pigmento.colorSolidoId) {
+      throw new Error("MOLIDO_INCOMPATIBLE_CON_COLOR_PIGMENTO");
     }
   }
 
@@ -206,33 +214,37 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
       },
     });
 
-    await registrarMovimientoMateriaPrima(
-      {
-        materiaPrimaId,
-        tipoMovimiento: "SALIDA",
-        motivo: "CONSUMO_PRODUCCION",
-        cantidad: materiaPrimaVirgenKg,
-        usuarioId: actor.id,
-        referenciaTipo: "ORDEN_PRODUCCION",
-        referenciaId: nueva.id,
-      },
-      tx as unknown as PrismaTransactionClient
+    if(materiaPrimaVirgenKg > 0){
+      await registrarMovimientoMateriaPrima(
+        {
+          materiaPrimaId,
+          tipoMovimiento: "SALIDA",
+          motivo: "CONSUMO_PRODUCCION",
+          cantidad: materiaPrimaVirgenKg,
+          usuarioId: actor.id,
+          referenciaTipo: "ORDEN_PRODUCCION",
+          referenciaId: nueva.id,
+        },
+        tx as unknown as PrismaTransactionClient
     );
+    }
 
-    await registrarMovimientoPigmento(
-      {
-        pigmentoId,
-        tipoMovimiento: "SALIDA",
-        motivo: "CONSUMO_PRODUCCION",
-        cantidad: pigmentoRequeridoKg,
-        usuarioId: actor.id,
-        referenciaTipo: "ORDEN_PRODUCCION",
-        referenciaId: nueva.id,
-      },
-      tx as unknown as PrismaTransactionClient
-    );
+    if(pigmentoRequeridoKg > 0) {
+      await registrarMovimientoPigmento(
+        {
+          pigmentoId,
+          tipoMovimiento: "SALIDA",
+          motivo: "CONSUMO_PRODUCCION",
+          cantidad: pigmentoRequeridoKg,
+          usuarioId: actor.id,
+          referenciaTipo: "ORDEN_PRODUCCION",
+          referenciaId: nueva.id,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
 
-    if (inventarioMolidoId !== undefined) {
+    if (inventarioMolidoId !== undefined && materialMolidoKg > 0) {
       const inventarioMolido = await tx.inventarioMolido.findUniqueOrThrow({
         where: { id: inventarioMolidoId },
       });
@@ -273,28 +285,6 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
   });
 
   return serializar(final);
-}
-
-export async function confirmarMaterialSiguiente(id: bigint, actor: AuthUser, ip?: string) {
-  const orden = await prisma.ordenProduccion.findUnique({ where: { id } });
-  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
-  if (orden.materialSiguienteConfirmado) throw new Error("MATERIAL_YA_CONFIRMADO");
-
-  await prisma.ordenProduccion.update({
-    where: { id },
-    data: { materialSiguienteConfirmado: true, materialConfirmadoEn: new Date() },
-  });
-
-  await registrarAccion({
-    usuarioId: actor.id,
-    usuarioLogin: actor.usuario,
-    usuarioNombre: actor.nombre,
-    modulo: "ORDENES",
-    accion: "confirmar_material_siguiente",
-    entidad: "orden_produccion",
-    entidadId: id,
-    ...(ip !== undefined && { ip }),
-  });
 }
 
 export async function activarOrden(id: bigint, actor: AuthUser, ip?: string) {
@@ -450,6 +440,30 @@ export async function cancelarOrden(
   });
 }
 
+// Acciones del encargado de pigmentos
+
+export async function confirmarMaterialSiguiente(id: bigint, actor: AuthUser, ip?: string) {
+  const orden = await prisma.ordenProduccion.findUnique({ where: { id } });
+  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
+  if (orden.materialSiguienteConfirmado) throw new Error("MATERIAL_YA_CONFIRMADO");
+
+  await prisma.ordenProduccion.update({
+    where: { id },
+    data: { materialSiguienteConfirmado: true, materialConfirmadoEn: new Date() },
+  });
+
+  await registrarAccion({
+    usuarioId: actor.id,
+    usuarioLogin: actor.usuario,
+    usuarioNombre: actor.nombre,
+    modulo: "ORDENES",
+    accion: "confirmar_material_siguiente",
+    entidad: "orden_produccion",
+    entidadId: id,
+    ...(ip !== undefined && { ip }),
+  });
+}
+
 export async function sustituirMaterialPigmentado(
   ordenId: bigint,
   data: SustituirMaterialPigmentadoBody,
@@ -515,18 +529,20 @@ export async function sustituirMaterialPigmentado(
       tx as unknown as PrismaTransactionClient
     );
 
-    await registrarMovimientoPigmento(
-      {
-        pigmentoId: orden.pigmentoId,
-        tipoMovimiento: "ENTRADA",
-        motivo: "SUSTITUCION_MATERIAL_PIGMENTADO",
-        cantidad: kgPigmentoLiberados,
-        usuarioId: actor.id,
-        referenciaTipo: "ORDEN_PRODUCCION",
-        referenciaId: ordenId,
-      },
-      tx as unknown as PrismaTransactionClient
-    );
+    if(kgPigmentoLiberados > 0){
+      await registrarMovimientoPigmento(
+        {
+          pigmentoId: orden.pigmentoId,
+          tipoMovimiento: "ENTRADA",
+          motivo: "SUSTITUCION_MATERIAL_PIGMENTADO",
+          cantidad: kgPigmentoLiberados,
+          usuarioId: actor.id,
+          referenciaTipo: "ORDEN_PRODUCCION",
+          referenciaId: ordenId,
+        },
+        tx as unknown as PrismaTransactionClient
+      );
+    }
 
     await registrarMovimientoMaterialPigmentado(
       {

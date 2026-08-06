@@ -3,11 +3,13 @@ import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import { compararCambios } from "../../utils/comparar-cambios.js";
 import type { AuthUser } from "../../types/fastify.js";
 import type { CrearMotivoParoBody, EditarMotivoParoBody } from "./motivoParo.schema.js";
+import type { CategoriaMotivoParo } from "../../../prisma/generated/prisma/client/enums.js";
 
-function serializar(motivo: { id: bigint; nombre: string; activo: boolean }) {
+function serializar(motivo: { id: bigint; nombre: string; activo: boolean; categoria: CategoriaMotivoParo }) {
   return {
     id: motivo.id.toString(),
     nombre: motivo.nombre,
+    categoria: motivo.categoria,
     activo: motivo.activo,
   };
 }
@@ -21,7 +23,7 @@ export async function crearMotivoParo(data: CrearMotivoParoBody, actor: AuthUser
   const existente = await prisma.motivoParo.findUnique({ where: { nombre: data.nombre } });
   if (existente) throw new Error("MOTIVO_PARO_YA_EXISTE");
 
-  const nuevo = await prisma.motivoParo.create({ data: { nombre: data.nombre } });
+  const nuevo = await prisma.motivoParo.create({ data: { nombre: data.nombre, categoria: data.categoria } });
 
   await registrarAccion({
     usuarioId: actor.id,

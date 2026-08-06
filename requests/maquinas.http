@@ -19,11 +19,11 @@ POST {{baseUrl}}/maquinas
 Content-Type: application/json
 
 {
-  "nombre": "TX 268T",
-  "codigo": "TX268T",
-  "numero": 1,
+  "nombre": "TX 568T",
+  "codigo": "TX568T",
+  "numero": 4,
   "tipoProceso": "INYECCION",
-  "capacidadTon": 268
+  "capacidadTon": 568
 }
 
 ### Intentar crear con el mismo código — debe fallar con 409
@@ -51,7 +51,7 @@ Content-Type: application/json
 }
 
 ### Editar máquina (reemplaza el 1 por el id real que regresó el create)
-PATCH {{baseUrl}}/maquinas/1
+PATCH {{baseUrl}}/maquinas/4
 Content-Type: application/json
 
 {
@@ -59,7 +59,7 @@ Content-Type: application/json
 }
 
 ### Cambiar estado a MANTENIMIENTO
-PATCH {{baseUrl}}/maquinas/1/estado
+PATCH {{baseUrl}}/maquinas/4/estado
 Content-Type: application/json
 
 {
@@ -67,7 +67,7 @@ Content-Type: application/json
 }
 
 ### Intentar poner el mismo estado otra vez — debe fallar con 409
-PATCH {{baseUrl}}/maquinas/1/estado
+PATCH {{baseUrl}}/maquinas/4/estado
 Content-Type: application/json
 
 {
@@ -75,7 +75,7 @@ Content-Type: application/json
 }
 
 ### Regresar a ACTIVA
-PATCH {{baseUrl}}/maquinas/1/estado
+PATCH {{baseUrl}}/maquinas/4/estado
 Content-Type: application/json
 
 {
@@ -83,7 +83,7 @@ Content-Type: application/json
 }
 
 ### Cambiar a INACTIVA
-PATCH {{baseUrl}}/maquinas/1/estado
+PATCH {{baseUrl}}/maquinas/4/estado
 Content-Type: application/json
 
 {
@@ -104,7 +104,7 @@ Content-Type: application/json
 
 {
   "usuario": "supervisor01",
-  "password": "nuevaPassword456"
+  "password": "password123"
 }
 
 ### Supervisor SÍ puede listar (debe dar 200)

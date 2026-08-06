@@ -1,0 +1,88 @@
+### supervisor-flujos.http
+
+@baseUrl = http://localhost:3000
+
+### Login supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "supervisor01",
+  "password": "password123"
+}
+
+### ============ SOLICITUD DE MATERIAL — VIRGEN ============
+
+### Crear solicitud de material virgen (ajusta el id del avance abierto)
+POST {{baseUrl}}/avances-turno/1/solicitudes-material
+Content-Type: application/json
+
+{
+  "tipoMaterial": "VIRGEN",
+  "kgSolicitados": 25,
+  "motivo": "Mayor merma de lo estimado, se necesita material adicional"
+}
+
+### Listar solicitudes de ese avance
+GET {{baseUrl}}/avances-turno/1/solicitudes-material
+
+### ============ SOLICITUD DE MATERIAL — MOLIDO ============
+### (requiere un avance sobre una orden de mezcla)
+
+### Crear solicitud de material molido (ajusta el id del avance de una orden con mezcla)
+POST {{baseUrl}}/avances-turno/2/solicitudes-material
+Content-Type: application/json
+
+{
+  "tipoMaterial": "MOLIDO",
+  "kgSolicitados": 15,
+  "motivo": "Se necesita más molido para completar el turno"
+}
+
+### ============ TIEMPO DE PARO ============
+
+### Crear tiempo de paro (ajusta el id del avance y el motivoParoId)
+POST {{baseUrl}}/avances-turno/1/tiempos-paro
+Content-Type: application/json
+
+{
+  "motivoParoId": "2",
+  "minutos": 35,
+  "observaciones": "Falla en sistema hidráulico, se resolvió en sitio"
+}
+
+### Crear tiempo de paro con motivo "Otro"
+POST {{baseUrl}}/avances-turno/1/tiempos-paro
+Content-Type: application/json
+
+{
+  "motivoParoId": "5",
+  "minutos": 10,
+  "observaciones": "Corte de energía breve en la planta"
+}
+
+### Listar tiempos de paro de ese avance
+GET {{baseUrl}}/avances-turno/1/tiempos-paro
+
+### ============ INCIDENCIA MATERIAL MAL PIGMENTADO ============
+
+### Reportar incidencia — destino STOCK (entra directo)
+POST {{baseUrl}}/avances-turno/1/incidencia-mal-pigmentado
+Content-Type: application/json
+
+{
+  "piezasAfectadas": 40,
+  "destino": "STOCK"
+}
+
+### Reportar incidencia — destino MOLINO (queda pendiente de confirmación)
+POST {{baseUrl}}/avances-turno/1/incidencia-mal-pigmentado
+Content-Type: application/json
+
+{
+  "piezasAfectadas": 60,
+  "destino": "MOLINO"
+}
+
+### Verificar que el inventario de producto subió (por el caso STOCK)
+GET {{baseUrl}}/inventario/productos

@@ -156,6 +156,7 @@ model ColorSolido {
   inventariosMolido InventarioMolido[]                @relation("InventarioMolidoColor")
   movimientos       HistorialMovimientoInventario[]   @relation("MovimientoColorSolido")
   moliendas         Molienda[]                        @relation("MoliendaColor")
+  pigmentos          Pigmento[]                        @relation("PigmentoColorSolido")
 
   @@map("colores_solidos")
 }
@@ -226,6 +227,8 @@ model Pigmento {
   costoUnitario   Decimal?               @db.Decimal(10,2)
 
   tipoMaterial    TipoMaterial           // ← antes: materiaPrimaId BigInt + relación
+  colorSolidoId   BigInt?
+  colorSolido     ColorSolido? @relation("PigmentoColorSolido", fields: [colorSolidoId], references: [id])
 
   activo          Boolean                @default(true)
   createdAt       DateTime               @default(now())
@@ -722,6 +725,8 @@ model IncidenciaMaterialMalPigmentado {
   resueltoPor        Usuario? @relation("IncidenciaResueltaPor", fields: [resueltoPorId], references: [id])
   resueltoEn         DateTime?
 
+  moliendas          MoliendaIncidencia[]
+
   createdAt      DateTime @default(now())
 
   @@map("incidencias_material_mal_pigmentado")
@@ -743,6 +748,7 @@ model Molienda {
   observaciones   String?
 
   avancesTurno    MoliendaAvanceTurno[]  // ← antes: ordenes MoliendaOrden[]
+  incidencias     MoliendaIncidencia[]
 
   createdAt       DateTime    @default(now())
 
@@ -762,6 +768,21 @@ model MoliendaAvanceTurno {
 
   @@unique([moliendaId, avanceTurnoId])
   @@map("moliendas_avances_turno")
+}
+
+model MoliendaIncidencia {
+  id            BigInt   @id @default(autoincrement())
+
+  moliendaId    BigInt
+  molienda      Molienda @relation(fields: [moliendaId], references: [id])
+
+  incidenciaId  BigInt
+  incidencia    IncidenciaMaterialMalPigmentado @relation(fields: [incidenciaId], references: [id])
+
+  createdAt     DateTime @default(now())
+
+  @@unique([moliendaId, incidenciaId])
+  @@map("moliendas_incidencias")
 }
 
 // ------------------------------------ REFRESH TOKEN
@@ -806,6 +827,7 @@ enum MotivoMovimientoInventario {
   PRODUCCION
   CONSUMO_PRODUCCION
   DEVOLUCION_MATERIAL
+  MOLIENDA_COMPLETADA
   PRODUCTO_DEFECTUOSO
   CAMBIO_COLOR
   MERMA_PRODUCCION
