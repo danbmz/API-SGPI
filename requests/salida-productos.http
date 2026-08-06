@@ -22,12 +22,11 @@ Content-Type: application/json
 
 {
   "motivo": "ENTREGA_PEDIDO",
-  "pedidoId": "1",
+  "pedidoId": "4",
   "items": [
-    { "productoId": "1", "pigmentoId": "1", "cantidad": 300 },
-    { "productoId": "1", "pigmentoId": "2", "cantidad": 100 }
+    { "productoId": "1", "pigmentoId": "1", "cantidad": 1500 }
   ],
-  "descripcion": "Entrega parcial del pedido PED-2026-001"
+  "descripcion": "Entrega parcial del pedido PED-2026-004"
 }
 
 ### Verificar que bajó el inventario
@@ -59,7 +58,7 @@ Content-Type: application/json
 
 {
   "motivo": "VENTA",
-  "items": [{ "productoId": "1", "pigmentoId": "1", "cantidad": 20 }],
+  "items": [{ "productoId": "2", "pigmentoId": "6", "cantidad": 200 }],
   "descripcion": "Venta directa a cliente de mostrador"
 }
 

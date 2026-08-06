@@ -87,6 +87,8 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   MOLIENDA_SIN_ITEMS: {code: 409, message: "No hay nada que moler"},
   AVANCE_NO_DISPONIBLE_PARA_MOLIENDA: { code: 409, message: "Avance no confirmado o ya fue incluida en una molienda anterior"},
   INCIDENCIA_NO_DISPONIBLE_PARA_MOLIENDA: {code: 409, message: "Incidencia no confirmada o ya fue incluida en una molienda anterior"},
+  AVANCE_MATERIAL_NO_COINCIDE: {code: 409, message: "El tipo de material de este avance no coincide con el especificado"},
+  INCIDENCIA_MATERIAL_NO_COINCIDE: {code: 409, message: "El tipo de material de esta incidencia no coincide con el especificado"},
   // ERRORES DE PEDIDOS
   PEDIDO_NO_ENCONTRADO: { code: 404, message: "Pedido no encontrado"},
   PEDIDO_NUMERO_YA_EXISTE: { code: 409, message: "Ya existe un pedido con el mismo número"},
@@ -98,6 +100,7 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   PRODUCTO_NO_PERTENECE_AL_PEDIDO: {code: 409, message: "Este producto no forma parte del pedido"},
   // ERRORES DE LINEA (PEDIDODETALLE)
   PEDIDO_DETALLE_NO_ENCONTRADO: {code: 404, message: "Detalle de pedido no encontrado"},
+  STOCK_INSUFICIENTE_PRODUCTO: {code: 409, message: "Stock de producto insuficiente"},
   // ERRORES DE OPERADOR
   OPERADOR_NO_ENCONTRADO: {code: 404, message: "El operador no se encontro"},
   OPERADOR_YA_EXISTE: {code: 409, message: "Ya existe un operador con el mismo nombre"},

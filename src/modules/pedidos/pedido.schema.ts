@@ -63,6 +63,7 @@ export const pedidoDetalleResponseSchema = Type.Object({
   pigmentoColor: Type.Union([Type.String(), Type.Null()]),
   cantidadSolicitada: Type.Integer(),
   cantidadProducida: Type.Integer(), // calculada: suma de órdenes que cubren esta línea
+  cantidadEntregada: Type.Number(), // calculada: suma de todas las salidas de inventario que cubren esta linea
 });
 
 export const pedidoResponseSchema = Type.Object({

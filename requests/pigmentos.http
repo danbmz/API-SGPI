@@ -71,11 +71,11 @@ Content-Type: application/json
 }
 
 ### Editar pigmento (solo podemos editar dosisxKg y sctockMinimo)
-PATCH {{baseUrl}}/pigmentos/6
+PATCH {{baseUrl}}/pigmentos/1
 Content-Type: application/json
 
 {
-  "dosisGrPorKg": 3
+  "colorSolidoId": 4
 }
 
 ### Desactivar pigmento

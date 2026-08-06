@@ -27,6 +27,20 @@ async function serializar(pedido: any) {
         _sum: { piezasBuenas: true },
       });
 
+      const movimientosEntrega = await prisma.historialMovimientoInventario.aggregate({
+        where: {
+          tipoInventario: "PRODUCTO",
+          productoId: linea.productoId,
+          ...(linea.pigmentoId !== null && { pigmentoProductoId: linea.pigmentoId }),
+          motivo: "ENTREGA_PEDIDO",
+          referenciaTipo: "PEDIDO",
+          referenciaId: pedido.id,
+        },
+        _sum: { cantidadMovimiento: true },
+      });
+
+      // cantidadMovimiento es negativo en salidas, así que invertimos el signo
+      const cantidadEntregada = Math.abs(Number(movimientosEntrega._sum.cantidadMovimiento ?? 0));
       const cantidadProducida = agregado._sum.piezasBuenas ?? 0;
 
       return {
@@ -37,9 +51,11 @@ async function serializar(pedido: any) {
         pigmentoColor: linea.pigmento ? linea.pigmento.color : null,
         cantidadSolicitada: linea.cantidadSolicitada,
         cantidadProducida,
+        cantidadEntregada: Number(cantidadEntregada),
       };
     })
   );
+
 
   // Para totalOrdenes/ordenesCompletadas, ahora hay que juntar las órdenes de todas las líneas:
   const todasLasOrdenes = pedido.detalle.flatMap((linea: any) => linea.ordenes);

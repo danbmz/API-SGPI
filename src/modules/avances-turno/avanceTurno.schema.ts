@@ -11,6 +11,12 @@ const tipoMaterialSolicitudSchema = Type.Union([
   Type.Literal("MOLIDO"),
 ]);
 
+const tipoMaterialSchema = Type.Union([
+  Type.Literal("POLIPROPILENO"),
+  Type.Literal("POLIESTIRENO"),
+  Type.Literal("POLIETILENO"),
+])
+
 const destinoPiezasMalPigmentadasSchema = Type.Union([
   Type.Literal("STOCK"),
   Type.Literal("MOLINO"),
@@ -109,6 +115,10 @@ export const solicitudMaterialResponseSchema = Type.Object({
   confirmado: Type.Boolean(),
   confirmadoPorNombre: Type.Union([Type.String(), Type.Null()]),
   confirmadoEn: Type.Union([Type.String(), Type.Null()]),
+  // Nuevo: información derivada de la orden, según el tipo de material solicitado
+  tipoMaterialCategoria: tipoMaterialSchema, 
+  pigmentoColor: Type.Union([Type.String(), Type.Null()]), // solo aplica cuando tipoMaterial = VIRGEN
+  colorSolidoNombre: Type.Union([Type.String(), Type.Null()]), // solo aplica cuando tipoMaterial = MOLIDO
 });
 
 export const listaSolicitudMaterialResponseSchema = Type.Array(solicitudMaterialResponseSchema);

@@ -14,7 +14,7 @@ Content-Type: application/json
 ### ============ CONFIRMAR SOLICITUD DE MATERIAL ============
 
 ### Confirmar solicitud virgen (ajusta el id de la solicitud creada por el supervisor)
-PATCH {{baseUrl}}/solicitudes-material/1/confirmar
+PATCH {{baseUrl}}/solicitudes-material/3/confirmar
 
 ### Verificar que bajó materia prima Y pigmento
 GET {{baseUrl}}/inventario/materias-primas
@@ -59,7 +59,7 @@ Content-Type: application/json
 ###  con stock suficiente para ese material+pigmento)
 
 ### Sustituir material pigmentado (ajusta el id de la orden y de la combinación)
-PATCH {{baseUrl}}/ordenes/1/sustituir-material-pigmentado
+PATCH {{baseUrl}}/ordenes/9/sustituir-material-pigmentado
 Content-Type: application/json
 
 {

@@ -58,6 +58,8 @@ export async function listarPendientesMoler(tipoMaterial?: string) {
       pigmentoColor: a.orden.pigmento.color,
       kgMerma: Number(a.kgMerma),
       kgPlasta: Number(a.kgPlasta),
+      piezasDefectuosas: a.piezasDefectuosas,
+      piezasCambioColor: a.piezasCambioColor,
     })),
     incidencias: incidencias.map((i) => ({
       id: i.id.toString(),
@@ -95,11 +97,20 @@ export async function crearMolienda(data: CrearMoliendaBody, actor: AuthUser, ip
       confirmacionMolinoConfirmado: true,
       moliendas: { none: {} },
     },
+    include: { orden: { include: { materiaPrima: true } } },
   });
 
   // Validamos que los avances seleccionados por el molino cumplan la validacion, si todoas las cumplen entonces todas estan disponibles 
   if (avancesValidos.length !== avanceIds.length) {
     throw new Error("AVANCE_NO_DISPONIBLE_PARA_MOLIENDA");
+  }
+
+  // Nueva validación: todos los avances deben ser del mismo tipoMaterial que la molienda
+  const avanceConMaterialDistinto = avancesValidos.find(
+    (a) => a.orden.materiaPrima.tipo !== data.tipoMaterial
+  );
+  if (avanceConMaterialDistinto) {
+    throw new Error("AVANCE_MATERIAL_NO_COINCIDE");
   }
 
   const incidenciasValidas = await prisma.incidenciaMaterialMalPigmentado.findMany({
@@ -109,9 +120,19 @@ export async function crearMolienda(data: CrearMoliendaBody, actor: AuthUser, ip
       confirmadoMolino: true,
       moliendas: { none: {} },
     },
+    include: { avanceTurno: { include: { orden: { include: { materiaPrima: true } } } } } ,
   });
+
   if (incidenciasValidas.length !== incidenciaIds.length) {
     throw new Error("INCIDENCIA_NO_DISPONIBLE_PARA_MOLIENDA");
+  }
+
+  // Misma validación para incidencias
+  const incidenciaConMaterialDistinto = incidenciasValidas.find(
+    (i) => i.avanceTurno.orden.materiaPrima.tipo !== data.tipoMaterial
+  );
+  if (incidenciaConMaterialDistinto) {
+    throw new Error("INCIDENCIA_MATERIAL_NO_COINCIDE");
   }
 
   const nueva = await prisma.$transaction(async (tx) => {
@@ -138,7 +159,7 @@ export async function crearMolienda(data: CrearMoliendaBody, actor: AuthUser, ip
         origen: "INTERNO",
         colorSolidoId,
         tipoMovimiento: "ENTRADA",
-        motivo: "PLASTA", // o un motivo genérico "molienda" si prefieres distinguirlo — ver nota
+        motivo: "MOLIENDA_COMPLETADA", 
         cantidad: data.kgIngresados,
         usuarioId: actor.id,
         referenciaTipo: "MOLIENDA",

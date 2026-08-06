@@ -58,8 +58,8 @@ Content-Type: application/json
 
 {
   "tipoInventario": "MOLIDO",
-  "tipoMaterial": "POLIESTIRENO",
-  "colorSolidoId": "5",
+  "tipoMaterial": "POLIPROPILENO",
+  "colorSolidoId": "8",
   "cantidad": 800,
   "descripcion": "Compra de molido rojo a otra fábrica"
 }

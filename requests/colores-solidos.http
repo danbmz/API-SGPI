@@ -19,7 +19,7 @@ POST {{baseUrl}}/colores-solidos
 Content-Type: application/json
 
 {
-  "nombre": "Blanco"
+  "nombre": "Natural"
 }
 
 ### Crear color — Azul

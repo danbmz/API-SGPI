@@ -14,7 +14,7 @@ Content-Type: application/json
 ### ============ CONFIRMACIÓN NORMAL DE AVANCE (merma/plasta) ============
 ### (ya la habías probado antes, referencia rápida — ajusta el id del avance)
 
-PATCH {{baseUrl}}/avances-turno/1/confirmar-molino
+PATCH {{baseUrl}}/avances-turno/3/confirmar-molino
 Content-Type: application/json
 
 {
@@ -50,11 +50,11 @@ Content-Type: application/json
 
 {
   "tipoMaterial": "POLIPROPILENO",
-  "colorSolidoId": "1",
+  "colorSolidoId": "4",
   "kgIngresados": 12,
   "fecha": "2026-08-05",
   "observaciones": "Molienda de prueba",
-  "avanceTurnoIds": ["1"],
+  "avanceTurnoIds": ["1", "2", "3"],
   "incidenciaIds": ["2"]
 }
 

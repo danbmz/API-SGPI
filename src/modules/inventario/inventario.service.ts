@@ -293,6 +293,22 @@ export async function registrarSalidaProducto(
     }
   }
 
+  // Validación de stock suficiente para cada item, antes de mover nada
+  for (const item of data.items) {
+    const inventario = await prisma.inventarioProductoTerminado.findUnique({
+      where: {
+        productoId_pigmentoId: {
+          productoId: BigInt(item.productoId),
+          pigmentoId: BigInt(item.pigmentoId),
+        },
+      },
+    });
+
+    if (!inventario || Number(inventario.cantidadActual) < item.cantidad) {
+      throw new Error("STOCK_INSUFICIENTE_PRODUCTO");
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
     for (const item of data.items) {
       await registrarMovimientoProducto(

@@ -29,6 +29,8 @@ export const avancePendienteSchema = Type.Object({
   pigmentoColor: Type.String(),
   kgMerma: Type.Number(),
   kgPlasta: Type.Number(),
+  piezasDefectuosas: Type.Integer(), 
+  piezasCambioColor: Type.Integer(),   
 });
 
 export const incidenciaPendienteSchema = Type.Object({

@@ -54,6 +54,8 @@ function serializar(avance: any) {
 }
 
 function serializarSolicitud(solicitud: any) {
+  const orden = solicitud.avanceTurno.orden;
+
   return {
     id: solicitud.id.toString(),
     avanceTurnoId: solicitud.avanceTurnoId.toString(),
@@ -63,6 +65,12 @@ function serializarSolicitud(solicitud: any) {
     confirmado: solicitud.confirmado,
     confirmadoPorNombre: solicitud.confirmadoPor ? solicitud.confirmadoPor.nombre : null,
     confirmadoEn: solicitud.confirmadoEn ? solicitud.confirmadoEn.toISOString() : null,
+    tipoMaterialCategoria: orden.materiaPrima.tipo,
+    pigmentoColor: solicitud.tipoMaterial === "VIRGEN" ? orden.pigmento.color : null,
+    colorSolidoNombre:
+      solicitud.tipoMaterial === "MOLIDO" && orden.inventarioMolido
+        ? orden.inventarioMolido.colorSolido.nombre
+        : null,
   };
 }
 
@@ -108,7 +116,20 @@ export async function listarAvancesTurno(actor: AuthUser) {
 export async function listarSolicitudesMaterial(avanceTurnoId: bigint) {
   const solicitudes = await prisma.solicitudMaterial.findMany({
     where: { avanceTurnoId },
-    include: { confirmadoPor: true },
+    include: {
+      confirmadoPor: true,
+      avanceTurno: {
+        include: {
+          orden: {
+            include: {
+              materiaPrima: true,
+              pigmento: true,
+              inventarioMolido: { include: { colorSolido: true } },
+            },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
   return solicitudes.map(serializarSolicitud);
@@ -408,7 +429,27 @@ export async function crearSolicitudMaterial(
     ...(ip !== undefined && { ip }),
   });
 
-  return serializarSolicitud(nueva);
+  // Volvemos a consultar para traer con la informacion complementaria.
+  const final = await prisma.solicitudMaterial.findFirst({
+    where: { id: nueva.id },
+    include: {
+      confirmadoPor: true,
+      avanceTurno: {
+        include: {
+          orden: {
+            include: {
+              materiaPrima: true,
+              pigmento: true,
+              inventarioMolido: { include: { colorSolido: true } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return serializarSolicitud(final);
 }
 
 export async function crearTiempoParo(
