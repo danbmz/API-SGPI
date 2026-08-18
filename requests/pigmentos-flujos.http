@@ -13,8 +13,11 @@ Content-Type: application/json
 
 ### ============ CONFIRMAR SOLICITUD DE MATERIAL ============
 
+###
+PATcH {{baseUrl}}/ordenes/:id/confirmar-material
+
 ### Confirmar solicitud virgen (ajusta el id de la solicitud creada por el supervisor)
-PATCH {{baseUrl}}/solicitudes-material/3/confirmar
+PATCH {{baseUrl}}/solicitudes-material/10/confirmar
 
 ### Verificar que bajó materia prima Y pigmento
 GET {{baseUrl}}/inventario/materias-primas

@@ -133,7 +133,7 @@ export async function cambiarEstadoMaquina(
     accion: "cambiar_estado",
     entidad: "maquina",
     entidadId: id,
-    detalle: `estado: ${estadoAnterior} → ${data.estado}`,
+    detalle: `estado: ${estadoAnterior} → ${data.estado}${data.motivo ? ` (${data.motivo})` : ""}`,
     ...(ip !== undefined && { ip }),
   });
 

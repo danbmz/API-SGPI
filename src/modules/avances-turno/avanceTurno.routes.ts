@@ -15,6 +15,9 @@ import {
   resolverIncidencia,
   listarTiemposParo,
   crearTiempoParo,
+  obtenerAvance,
+  listarIncidenciasMalPigmentado,
+  listarTodasSolicitudesMaterial,
 } from "./avanceTurno.service.js";
 import {
   crearAvanceTurnoBodySchema,
@@ -39,18 +42,91 @@ import {
   listaTiempoParoResponseSchema,
   crearTiempoParoBodySchema,
   tiempoParoResponseSchema,
+  listaIncidenciaResponseSchema,
+  listarIncidenciasQuerySchema,
+  listarAvancesTurnoQuerySchema,
+  listarSolicitudesMaterialQuerySchema,
 } from "./avanceTurno.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
 export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
+  
+  // Listamos todos los avances de turno
   app.get(
     "/avances-turno",
     {
       preHandler: [app.authenticate],
-      schema: { response: { 200: listaAvanceTurnoResponseSchema } },
+      schema: { 
+        querystring: listarAvancesTurnoQuerySchema,
+        response: { 200: listaAvanceTurnoResponseSchema } 
+      },
     },
     async (request, reply) => {
-      return reply.send(await listarAvancesTurno(request.authUser!));
+      return reply.send(await listarAvancesTurno(request.authUser!, request.query));
+    }
+  );
+
+  // Listamos solo 1 avance de turno (todos pueden ver los avances, pero solo deberian ADMIN y SUPER)
+  app.get(
+    "/avances-turno/:id",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        params: avanceTurnoParamsSchema,
+        response: { 200: avanceTurnoResponseSchema, 404: errorResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const avance = await obtenerAvance(BigInt(request.params.id));
+        return reply.send(avance);
+      } catch (err) {
+        if (manejarErrorConocido(err, reply)) return;
+        throw err;
+      }
+    }
+  );
+
+  // Listamos incidencias (accesible para todos pero deberian poder verlo solo MOLINO, PIGMENTOS y SUPERVISOR los suyos)
+  app.get(
+    "/incidencias-mal-pigmentado",
+    {
+      preHandler: [app.authenticate],
+      schema: {
+        querystring: listarIncidenciasQuerySchema,
+        response: { 200: listaIncidenciaResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      return reply.send(await listarIncidenciasMalPigmentado(request.query));
+    }
+  );
+
+  // Lista las solicitudes de material que ha hecho
+  app.get(
+  "/avances-turno/:id/solicitudes-material",
+      {
+          schema: {
+          params: avanceTurnoParamsSchema,
+          response: { 200: listaSolicitudMaterialResponseSchema, 404: errorResponseSchema },
+          },
+      },
+      async (request, reply) => {
+          return reply.send(await listarSolicitudesMaterial(BigInt(request.params.id)));
+      }
+  );
+
+    // Lista los tiempos paro del avance
+  app.get(
+    "/avances-turno/:id/tiempos-paro",
+    {
+      schema: {
+        params: avanceTurnoParamsSchema,
+        response: { 200: listaTiempoParoResponseSchema },
+      },
+    },
+    async (request, reply) => {
+      return reply.send(await listarTiemposParo(BigInt(request.params.id)));
     }
   );
 
@@ -160,7 +236,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
       }
     );
 
-    // Incidencia de material mal pigmentado
+    // Crear Incidencia de material mal pigmentado
     app.post(
       "/avances-turno/:id/incidencia-mal-pigmentado",
       {
@@ -183,20 +259,6 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
           if (manejarErrorConocido(err, reply)) return;
           throw err;
         }
-      }
-    );
-
-    // ver tiempos paro de un avance
-    app.get(
-      "/avances-turno/:id/tiempos-paro",
-      {
-        schema: {
-          params: avanceTurnoParamsSchema,
-          response: { 200: listaTiempoParoResponseSchema },
-        },
-      },
-      async (request, reply) => {
-        return reply.send(await listarTiemposParo(BigInt(request.params.id)));
       }
     );
 
@@ -261,7 +323,7 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
       }
     );
 
-    // Confirma la entrada de piezas mal pigmentadas
+    // Confirma la entrada de piezas mal pigmentadas (incidencia)
     app.patch(
       "/incidencias-mal-pigmentado/:id/confirmar-molino",
       {
@@ -292,6 +354,20 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
   app.register(async function pigmentosRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
     app.addHook("preHandler", app.authorize(["PIGMENTOS"]));
 
+    // Lista todas las solicitudes de material, sin importar de quienes sean
+    app.get(
+      "/solicitudes-material",
+      {
+        schema: {
+          querystring: listarSolicitudesMaterialQuerySchema,
+          response: { 200: listaSolicitudMaterialResponseSchema },
+        },
+      },
+      async (request, reply) => {
+        return reply.send(await listarTodasSolicitudesMaterial(request.query));
+      }
+    );
+
     // Confirma los kG sobrantes de un avance
     app.patch(
       "/avances-turno/:id/confirmar-sobrante",
@@ -316,20 +392,6 @@ export default async function avanceTurnoRoutes(app: FastifyInstance<any, any, a
           throw err;
         }
       }
-    );
-
-    // Lista todas las solicitudes de material
-    app.get(
-    "/avances-turno/:id/solicitudes-material",
-        {
-            schema: {
-            params: avanceTurnoParamsSchema,
-            response: { 200: listaSolicitudMaterialResponseSchema, 404: errorResponseSchema },
-            },
-        },
-        async (request, reply) => {
-            return reply.send(await listarSolicitudesMaterial(BigInt(request.params.id)));
-        }
     );
 
     // Confirmar salida de material solicitado

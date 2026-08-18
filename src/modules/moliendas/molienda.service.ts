@@ -86,6 +86,7 @@ export async function crearMolienda(data: CrearMoliendaBody, actor: AuthUser, ip
   const colorSolidoId = BigInt(data.colorSolidoId);
   const color = await prisma.colorSolido.findUnique({ where: { id: colorSolidoId } });
   if (!color) throw new Error("COLOR_SOLIDO_NO_ENCONTRADO");
+  if (!color.activo) throw new Error("COLOR_SOLIDO_INACTIVO");
 
   const avanceIds = data.avanceTurnoIds.map((id) => BigInt(id));
   const incidenciaIds = data.incidenciaIds.map((id) => BigInt(id));

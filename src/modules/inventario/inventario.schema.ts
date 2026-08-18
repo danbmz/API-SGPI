@@ -16,6 +16,11 @@ const tipoMaterialSchema = Type.Union([
   Type.Literal("POLIETILENO"),
 ]);
 
+// const tipoMaterialMolidoSchema = Type.Union([
+//   Type.Literal("POLIPROPILENO"),
+//   Type.Literal("POLIESTIRENO"),
+// ]);
+
 // ---------- Entrada de proveedor ----------
 
 export const entradaProveedorBodySchema = Type.Union([
@@ -90,6 +95,10 @@ export const historialQuerySchema = Type.Object({
   materiaPrimaId: Type.Optional(Type.String()),
   pigmentoId: Type.Optional(Type.String()),
   productoId: Type.Optional(Type.String()),
+  colorSolidoId: Type.Optional(Type.String()),      // ← nuevo, para filtrar molido con precisión
+  origen: Type.Optional(origenMolidoSchema),          // ← nuevo, para filtrar molido con precisión
+  tipoMaterial: Type.Optional(tipoMaterialSchema),             // ← nuevo, para filtrar molido con precisión
+  combinacionMaterialPigmentadoId: Type.Optional(Type.String()), // ← nuevo, para material pigmentado
   limite: Type.Optional(Type.Integer({ minimum: 1, maximum: 200, default: 50 })),
 });
 
@@ -109,6 +118,13 @@ export const movimientoResponseSchema = Type.Object({
   unidadMedida: Type.String(),
   usuarioNombre: Type.String(),
   createdAt: Type.String(),
+  // Nuevo: contexto del material afectado, según tipoInventario
+  materiaPrimaNombre: Type.Union([Type.String(), Type.Null()]),
+  pigmentoColor: Type.Union([Type.String(), Type.Null()]),
+  pigmentoCategoria: Type.Union([Type.String(), Type.Null()]),
+  productoNombre: Type.Union([Type.String(), Type.Null()]),
+  materialMolidoTipo: Type.Union([Type.String(), Type.Null()]),
+  colorSolidoNombre: Type.Union([Type.String(), Type.Null()]),
 });
 
 export const listaMovimientosResponseSchema = Type.Array(movimientoResponseSchema);
@@ -145,6 +161,7 @@ export const inventarioProductoItemSchema = Type.Object({
 export const listaInventarioProductoResponseSchema = Type.Array(inventarioProductoItemSchema);
 
 export const inventarioMolidoItemSchema = Type.Object({
+  id: Type.String(),
   tipoMaterial: tipoMaterialSchema,
   origen: origenMolidoSchema,
   // Codigo interno?
@@ -156,7 +173,9 @@ export const listaInventarioMolidoResponseSchema = Type.Array(inventarioMolidoIt
 
 export const inventarioMaterialPigmentadoItemSchema = Type.Object({
   combinacionId: Type.String(),
+  materiaPrimaId: Type.String(),
   materiaPrimaNombre: Type.String(),
+  pigmentoId: Type.String(),
   pigmentoColor: Type.String(),
   pigmentoCategoria: Type.String(),
   cantidadActual: Type.Number(),

@@ -7,5 +7,6 @@ export default fp(async function corsPlugin(app: FastifyInstance) {
     await app.register(cors, {
         origin: env.FRONTEND_URL,
         credentials: true,
+        methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     })
 });

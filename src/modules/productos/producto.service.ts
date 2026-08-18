@@ -25,7 +25,7 @@ function serializar(producto: {
     nombre: producto.nombre,
     codigo: producto.codigo,
     tipo: producto.tipo,
-    TipoMaterial: producto.tipoMaterial,
+    tipoMaterial: producto.tipoMaterial,
     cavidades: producto.cavidades,
     ciclo: producto.ciclo,
     peso: Number(producto.peso),

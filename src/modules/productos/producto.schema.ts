@@ -60,7 +60,7 @@ export const productoResponseSchema = Type.Object({
   piezasPorEmpaque: Type.Integer(),
   precio: Type.Number(),
   descripcion: Type.String(),
-  TipoMaterial: tipoMaterialSchema,
+  tipoMaterial: tipoMaterialSchema,
   activo: Type.Boolean(),
 });
 

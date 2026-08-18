@@ -20,19 +20,21 @@ import {
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
 export default async function operdaorRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
+  // ------- Listado accesible para todos los roles.
+  app.get(
+      "/operadores",
+      {
+      preHandler: [app.authenticate],
+      schema: { response: { 200: listaOperadorResponseSchema } },
+      },
+      async (request, reply) => {
+      return reply.send(await listarOperadores());
+      }
+  );
+
+  // ------- Crear, editar, y acciones que solo el admin puede hacer
   app.register(async function adminRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
     app.addHook("preHandler", app.authorize(["ADMIN"]));
-
-    app.get(
-        "/operadores",
-        {
-        preHandler: [app.authenticate],
-        schema: { response: { 200: listaOperadorResponseSchema } },
-        },
-        async (request, reply) => {
-        return reply.send(await listarOperadores());
-        }
-    );
 
     app.post(
       "/operadores",

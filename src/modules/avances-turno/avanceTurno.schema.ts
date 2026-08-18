@@ -115,27 +115,30 @@ export const solicitudMaterialResponseSchema = Type.Object({
   confirmado: Type.Boolean(),
   confirmadoPorNombre: Type.Union([Type.String(), Type.Null()]),
   confirmadoEn: Type.Union([Type.String(), Type.Null()]),
+  materiaPrimaNombre: Type.String(), 
   // Nuevo: información derivada de la orden, según el tipo de material solicitado
-  tipoMaterialCategoria: tipoMaterialSchema, 
   pigmentoColor: Type.Union([Type.String(), Type.Null()]), // solo aplica cuando tipoMaterial = VIRGEN
   colorSolidoNombre: Type.Union([Type.String(), Type.Null()]), // solo aplica cuando tipoMaterial = MOLIDO
+  supervisorNombre: Type.String(),           
+  maquinaNombre: Type.String(),
 });
 
 export const listaSolicitudMaterialResponseSchema = Type.Array(solicitudMaterialResponseSchema);
-
-// ---------- Tiempo paro ----------
-
-export const agregarTiempoParoSchema = Type.Object({
-    avanceTurnoId: Type.String(),
-    motivoParoId: Type.String(),
-    minutos: Type.Integer({ exclusiveMinimum: 0}), // No acepta un 0 como valor, siempre debe ser mayor
-    observaciones: Type.Optional(Type.String({maxLength: 500}))
-})
 
 // ---------- Parámetros ----------
 
 export const avanceTurnoParamsSchema = Type.Object({ id: Type.String() });
 export type AvanceTurnoParams = Static<typeof avanceTurnoParamsSchema>;
+
+// ---------- Query Params ----------
+
+export const listarAvancesTurnoQuerySchema = Type.Object({
+  estado: Type.Optional(Type.Union([Type.Literal("ABIERTO"), Type.Literal("CERRADO")])),
+  confirmacionMolinoConfirmado: Type.Optional(Type.Boolean()),
+  sobranteConfirmado: Type.Optional(Type.Boolean()),
+});
+
+export type ListarAvancesTurnoQuerySchema = Static<typeof listarAvancesTurnoQuerySchema>;
 
 // ---------- Respuestas ----------
 
@@ -143,6 +146,12 @@ export const avanceTurnoResponseSchema = Type.Object({
   id: Type.String(),
   ordenId: Type.String(),
   ordenFolio: Type.String(),
+  ordenProductoNombre: Type.String(),    
+  ordenPigmentoColor: Type.String(),      
+  ordenMaquinaNombre: Type.String(),     
+  ordenTotalPiezas: Type.Integer(),  
+  ordenPiezasProducidas: Type.Integer(),
+  ordenTipoMaterial: tipoMaterialSchema, 
   supervisorId: Type.String(),
   supervisorNombre: Type.String(),
   turno: turnoTrabajoSchema,
@@ -152,16 +161,17 @@ export const avanceTurnoResponseSchema = Type.Object({
   estado: Type.Union([Type.Literal("ABIERTO"), Type.Literal("CERRADO")]),
   piezasBuenas: Type.Integer(),
   piezasDefectuosas: Type.Integer(),
-  defectoId: Type.String(),
-  defectoNombre: Type.String(),
+  defectoId: Type.Union([Type.String(), Type.Null()]),
+  defectoNombre: Type.Union([Type.String(), Type.Null()]),
   cicloReal: Type.Union([Type.Integer(), Type.Null()]),
-  materialKG: Type.Union([Type.Integer(), Type.Null()]),
+  materialKG: Type.Union([Type.Number(), Type.Null()]),
   kgMerma: Type.Number(),
   kgPlasta: Type.Number(),
   operadorId: Type.String(),
   operadorNombre: Type.String(),
   piezasCambioColor: Type.Integer(),
   kgSobrante: Type.Union([Type.Number(), Type.Null()]),
+  tipoMaterialSobrante: Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO"), Type.Null()]),
   sobranteConfirmado: Type.Boolean(),
   confirmacionMolinoConfirmado: Type.Union([Type.Boolean(), Type.Null()]),
   observaciones: Type.Union([Type.String(), Type.Null()]),
@@ -180,6 +190,16 @@ export const crearIncidenciaMalPigmentadoBodySchema = Type.Object({
 });
 
 export type CrearIncidenciaMalPigmentadoBody = Static<typeof crearIncidenciaMalPigmentadoBodySchema>;
+
+// ---------- Listar incidencias (query params) ----------
+
+export const listarIncidenciasQuerySchema = Type.Object({
+  resuelto: Type.Optional(Type.Boolean()),
+  destino: Type.Optional(destinoPiezasMalPigmentadasSchema),
+  avanceTurnoId: Type.Optional(Type.String()),
+});
+
+export type ListarIncidenciasQuery = Static<typeof listarIncidenciasQuerySchema>;
 
 // ---------- Confirmar recepción en molino ----------
 
@@ -204,6 +224,14 @@ export type ResolverIncidenciaBody = Static<typeof resolverIncidenciaBodySchema>
 export const incidenciaParamsSchema = Type.Object({ id: Type.String() });
 export type IncidenciaParams = Static<typeof incidenciaParamsSchema>;
 
+// ---------- Query params ----------
+
+export const listarSolicitudesMaterialQuerySchema = Type.Object({
+  confirmado: Type.Optional(Type.Boolean()),
+});
+
+export type ListarSolicitudesMaterialQuery = Static<typeof listarSolicitudesMaterialQuerySchema>;
+
 // ---------- Respuestas ----------
 
 export const incidenciaResponseSchema = Type.Object({
@@ -216,6 +244,9 @@ export const incidenciaResponseSchema = Type.Object({
   tipoMaterialAgregado: Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO"), Type.Null()]),
   kgMaterialAgregado: Type.Union([Type.Number(), Type.Null()]),
   gramosPigmentoAgregado: Type.Union([Type.Number(), Type.Null()]),
+  materiaPrimaNombre: Type.String(), 
+  pigmentoColor: Type.String(),   
+  ordenFolio: Type.String(), 
 });
 
 // =========== SCHEMA DE TIEMPOS PARO =============

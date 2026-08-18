@@ -19,6 +19,7 @@ enum RolUsuario {
   SUPERVISOR
   MOLINO
   PIGMENTOS
+  PROGRAMADOR
 }
 
 model Usuario {

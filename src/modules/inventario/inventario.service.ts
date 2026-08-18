@@ -76,6 +76,7 @@ export async function listarInventarioMolido() {
       (t) => t.tipoMaterial === r.tipoMaterial && t.origen === r.origen
     );
     return {
+      id: r.id.toString(),
       tipoMaterial: r.tipoMaterial,
       origen: r.origen,
       codigoInterno: tipo?.codigoInterno ?? null,
@@ -94,7 +95,9 @@ export async function listarInventarioMaterialPigmentado() {
 
   return registros.map((r) => ({
     combinacionId: r.combinacionId.toString(),
+    materiaPrimaId: r.combinacion.materiaPrimaId.toString(),
     materiaPrimaNombre: r.combinacion.materiaPrima.nombre,
+    pigmentoId: r.combinacion.pigmentoId.toString(),
     pigmentoColor: r.combinacion.pigmento.color,
     pigmentoCategoria: r.combinacion.pigmento.categoriaColor,
     cantidadActual: Number(r.cantidadActual),
@@ -121,6 +124,7 @@ export async function registrarEntradaProveedor(
       const materiaPrimaId = BigInt(data.materiaPrimaId);
       const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
       if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
+      if(!materiaPrima.activo) throw new Error("MATERIA_PRIMA_INACTIVA");
 
       return registrarMovimientoMateriaPrima({ ...base, materiaPrimaId });
     }
@@ -129,6 +133,7 @@ export async function registrarEntradaProveedor(
       const pigmentoId = BigInt(data.pigmentoId);
       const pigmento = await prisma.pigmento.findUnique({ where: { id: pigmentoId } });
       if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
+      if(!pigmento.activo) throw new Error("PIGMENTO_INACTIVO");
 
       return registrarMovimientoPigmento({ ...base, pigmentoId });
     }
@@ -137,11 +142,9 @@ export async function registrarEntradaProveedor(
       const tipoMaterial = data.tipoMaterial;
       const colorSolidoId = BigInt(data.colorSolidoId);
 
-      // const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
-      // if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
-
       const color = await prisma.colorSolido.findUnique({ where: { id: colorSolidoId } });
       if (!color) throw new Error("COLOR_SOLIDO_NO_ENCONTRADO");
+      if(!color.activo) throw new Error("COLOR_SOLIDO_INACTIVO")
 
       return registrarMovimientoMolido({
         ...base,
@@ -173,6 +176,7 @@ export async function registrarAjusteManual(
       const materiaPrimaId = BigInt(data.materiaPrimaId);
       const materiaPrima = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId } });
       if (!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
+      if (!materiaPrima.activo) throw new Error("MATERIA_PRIMA_INACTIVA");
 
       return registrarMovimientoMateriaPrima({ ...base, materiaPrimaId });
     }
@@ -181,6 +185,7 @@ export async function registrarAjusteManual(
       const pigmentoId = BigInt(data.pigmentoId);
       const pigmento = await prisma.pigmento.findUnique({ where: { id: pigmentoId } });
       if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
+      if (!pigmento.activo) throw new Error("PIGMENTO_INACTIVO");
 
       return registrarMovimientoPigmento({ ...base, pigmentoId });
     }
@@ -191,9 +196,11 @@ export async function registrarAjusteManual(
 
       const producto = await prisma.producto.findUnique({ where: { id: productoId } });
       if (!producto) throw new Error("PRODUCTO_NO_ENCONTRADO");
+      if (!producto.activo) throw new Error("PRODUCTO_INACTIVO");
 
       const pigmento = await prisma.pigmento.findUnique({ where: { id: pigmentoId } });
       if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
+      if (!pigmento.activo) throw new Error("PIGMENTO_INACTIVO");
 
       return registrarMovimientoProducto({ ...base, productoId, pigmentoId });
     }
@@ -204,6 +211,7 @@ export async function registrarAjusteManual(
 
       const color = await prisma.colorSolido.findUnique({ where: { id: colorSolidoId } });
       if (!color) throw new Error("COLOR_SOLIDO_NO_ENCONTRADO");
+      if (!color.activo) throw new Error("COLOR_SOLIDO_INACTIVO");
 
       return registrarMovimientoMolido({
         ...base,
@@ -217,8 +225,13 @@ export async function registrarAjusteManual(
       const materiaPrimaId = BigInt(data.materiaPrimaId);
       const pigmentoId = BigInt(data.pigmentoId);
 
+      const materiaPrima = await prisma.materiaPrima.findUnique({where: {id: materiaPrimaId}});
+      if(!materiaPrima) throw new Error("MATERIA_PRIMA_NO_ENCONTRADA");
+      if(!materiaPrima.activo) throw new Error("MATERIA_PRIMA_INACTIVA");
+
       const pigmento = await prisma.pigmento.findUnique({ where: { id: pigmentoId } });
       if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
+      if (!pigmento.activo) throw new Error("PIGMENTO_INACTIVO");
 
       return registrarMovimientoMaterialPigmentado({ ...base, materiaPrimaId, pigmentoId });
     }
@@ -235,14 +248,27 @@ export async function consultarHistorial(query: HistorialQuery) {
         query.tipoInventario === "MATERIA_PRIMA" && {
           materiaPrimaId: BigInt(query.materiaPrimaId),
         }),
-      ...(query.materiaPrimaId !== undefined &&
-        query.tipoInventario === "MOLIDO" && {
-          materialMolidoId: BigInt(query.materiaPrimaId),
+      ...(query.tipoMaterial !== undefined && {
+          materialMolidoTipo: query.tipoMaterial,
         }),
-      ...(query.pigmentoId !== undefined && { pigmentoId: BigInt(query.pigmentoId) }),
+      ...(query.colorSolidoId !== undefined && { colorSolidoId: BigInt(query.colorSolidoId)}),
+      ...(query.origen !== undefined && { origenMolido: query.origen}),
+      ...(query.combinacionMaterialPigmentadoId !== undefined && { combinacionMaterialPigmentadoId: BigInt(query.combinacionMaterialPigmentadoId)}),
+      ...(query.pigmentoId !== undefined && query.tipoInventario === "PIGMENTO" && { pigmentoId: BigInt(query.pigmentoId) }),
+      ...(query.pigmentoId !== undefined && query.tipoInventario === "PRODUCTO" && { pigmentoProductoId: BigInt(query.pigmentoId) }),
       ...(query.productoId !== undefined && { productoId: BigInt(query.productoId) }),
     },
-    include: { usuario: true },
+    include: {
+      usuario: true,
+      materiaPrima: true,
+      pigmento: true,
+      producto: true,
+      pigmentoProducto: true, // el pigmento asociado a un movimiento de tipo PRODUCTO
+      colorSolido: true,
+      combinacionMaterialPigmentado: {
+        include: { materiaPrima: true, pigmento: true },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: query.limite ?? 50,
   });
@@ -259,6 +285,30 @@ export async function consultarHistorial(query: HistorialQuery) {
     unidadMedida: m.unidadMedida,
     usuarioNombre: m.usuario.nombre,
     createdAt: m.createdAt.toISOString(),
+
+    materiaPrimaNombre:
+      m.tipoInventario === "MATERIA_PRIMA" ? m.materiaPrima?.nombre ?? null :
+      m.tipoInventario === "MATERIAL_PIGMENTADO" ? m.combinacionMaterialPigmentado?.materiaPrima.nombre ?? null :
+      m.tipoInventario === "PRODUCTO" ? m.producto?.tipoMaterial ?? null : // si Producto tiene materiaPrima
+      null,
+
+    pigmentoColor:
+      m.tipoInventario === "PIGMENTO" ? m.pigmento?.color ?? null :
+      m.tipoInventario === "PRODUCTO" ? m.pigmentoProducto?.color ?? null :
+      m.tipoInventario === "MATERIAL_PIGMENTADO" ? m.combinacionMaterialPigmentado?.pigmento.color ?? null :
+      null,
+
+    pigmentoCategoria:
+      m.tipoInventario === "PIGMENTO" ? m.pigmento?.categoriaColor ?? null :
+      m.tipoInventario === "PRODUCTO" ? m.pigmentoProducto?.categoriaColor ?? null :
+      m.tipoInventario === "MATERIAL_PIGMENTADO" ? m.combinacionMaterialPigmentado?.pigmento.categoriaColor ?? null :
+      null,
+
+    productoNombre: m.tipoInventario === "PRODUCTO" ? m.producto?.nombre ?? null : null,
+
+    materialMolidoTipo: m.tipoInventario === "MOLIDO" ? m.materialMolidoTipo ?? null : null,
+
+    colorSolidoNombre: m.tipoInventario === "MOLIDO" ? m.colorSolido?.nombre ?? null : null,
   }));
 }
 

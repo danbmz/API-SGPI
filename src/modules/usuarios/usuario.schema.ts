@@ -5,9 +5,8 @@ const rolUsuarioSchema = Type.Union([
   Type.Literal("SUPERVISOR"),
   Type.Literal("MOLINO"),
   Type.Literal("PIGMENTOS"),
+  Type.Literal("PROGRAMADOR"),
 ]);
-
-// export type RolUsuario = Static<typeof rolUsuarioSchema>; // ← nueva línea
 
 // ---------- Crear usuario ----------
 

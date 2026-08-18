@@ -7,6 +7,12 @@ const estadoPedidoSchema = Type.Union([
   Type.Literal("CANCELADO"),
 ]);
 
+const tipoMaterialSchema = Type.Union([
+  Type.Literal("POLIPROPILENO"),
+  Type.Literal("POLIESTIRENO"),
+  Type.Literal("POLIETILENO"),
+]);
+
 // ---------- Crear pedido ----------
 
 export const crearPedidoBodySchema = Type.Object({
@@ -59,6 +65,7 @@ export const pedidoDetalleResponseSchema = Type.Object({
   id: Type.String(),
   productoId: Type.String(),
   productoNombre: Type.String(),
+  tipoMaterial: tipoMaterialSchema,
   pigmentoId: Type.Union([Type.String(), Type.Null()]),
   pigmentoColor: Type.Union([Type.String(), Type.Null()]),
   cantidadSolicitada: Type.Integer(),

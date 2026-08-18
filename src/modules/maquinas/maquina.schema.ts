@@ -35,6 +35,7 @@ export type EditarMaquinaBody = Static<typeof editarMaquinaBodySchema>;
 
 export const cambiarEstadoMaquinaBodySchema = Type.Object({
   estado: estadoMaquinaSchema,
+  motivo: Type.Optional(Type.String({ maxLength: 300 })),
 });
 
 export type CambiarEstadoMaquinaBody = Static<typeof cambiarEstadoMaquinaBodySchema>;

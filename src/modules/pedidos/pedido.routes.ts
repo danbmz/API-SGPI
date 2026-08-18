@@ -22,7 +22,7 @@ import {
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
 export default async function pedidoRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
-  app.addHook("preHandler", app.authorize(["ADMIN"]));
+  app.addHook("preHandler", app.authorize(["ADMIN", "PROGRAMADOR"]));
 
   // Listar pedidos  
   app.get(

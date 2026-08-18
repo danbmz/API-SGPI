@@ -83,6 +83,8 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   INCIDENCIA_NO_ES_PARA_MOLINO: {code: 409, message: "Los productos no se mandaron a molino"},
   INCIDENCIA_YA_CONFIRMADA_MOLINO: {code: 409, message: "Productos mal pigmentados ya confirmados"},
   INCIDENCIA_YA_RESUELTA: {code: 409, message: "Ya se repimento el material"},
+  MATERIAL_Y_KG_DEBEN_VENIR_JUNTOS: {code: 409, message: "Si seleccionas un material, indica los kilogramos (y viceversa)"},
+  INCIDENCIA_SIN_DATOS_DE_RESOLUCION: {code: 409, message: "Indica al menos el material usado o el pigmento agregado"},
   // ERRORES DE ENCARGADO MOLINO
   MOLIENDA_SIN_ITEMS: {code: 409, message: "No hay nada que moler"},
   AVANCE_NO_DISPONIBLE_PARA_MOLIENDA: { code: 409, message: "Avance no confirmado o ya fue incluida en una molienda anterior"},
@@ -111,7 +113,13 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   DEFECTO_NO_ENCONTRADO: {code: 404, message: "Defecto no encontrado"},
   DEFECTO_YA_EXISTE: {code: 409, message: "Este defecto ya existe"},
   DEFECTO_INACTIVO: {code: 409, message: "El defecto ya está desactivado"},
-  DEFECTO_YA_ACTIVO: {code: 409, message: "El defecto ya está activo"}
+  DEFECTO_YA_ACTIVO: {code: 409, message: "El defecto ya está activo"},
+  // ERRORES POR CATALOGO DESACTIVADO
+  PRODUCTO_INACTIVO: { code: 409, message: "Producto inactivo"},
+  MATERIA_PRIMA_INACTIVA: { code: 409, message: "Materia prima inactiva"},
+  PIGMENTO_INACTIVO: { code: 409, message: "Pigmento inactivo"},
+  MAQUINA_NO_DISPONIBLE: { code: 409, message: "Maquina inactiva"},
+  COLOR_SOLIDO_INACTIVO: {code: 409, message: "Color sólido inactivo"}
 };
 
 export function manejarErrorConocido(err: unknown, reply: FastifyReply): boolean {

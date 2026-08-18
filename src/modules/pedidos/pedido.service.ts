@@ -47,6 +47,7 @@ async function serializar(pedido: any) {
         id: linea.id.toString(),
         productoId: linea.productoId.toString(),
         productoNombre: linea.producto.nombre,
+        tipoMaterial: linea.producto.tipoMaterial,
         pigmentoId: linea.pigmentoId ? linea.pigmentoId.toString() : null,
         pigmentoColor: linea.pigmento ? linea.pigmento.color : null,
         cantidadSolicitada: linea.cantidadSolicitada,
@@ -217,15 +218,18 @@ export async function agregarDetallePedido(
     throw new Error("PEDIDO_NO_SE_PUEDE_MODIFICAR");
   }
 
+  // Verificamos que existan el producto y pigmento (en caso de ser seleccionado) y que su estado sea ACTIVO
   const productoId = BigInt(data.productoId);
   const producto = await prisma.producto.findUnique({ where: { id: productoId } });
   if (!producto) throw new Error("PRODUCTO_NO_ENCONTRADO");
+  if(!producto.activo) throw new Error("PRODUCTO_INACTIVO")
 
   let pigmentoId: bigint | undefined;
   if (data.pigmentoId !== undefined) {
     pigmentoId = BigInt(data.pigmentoId);
     const pigmento = await prisma.pigmento.findUnique({ where: { id: pigmentoId } });
     if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
+    if(!pigmento.activo) throw new Error("PIGMENTO_INACTIVO")
   }
 
   await prisma.pedidoDetalle.create({

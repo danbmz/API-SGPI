@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { listarOrdenes, crearOrden, confirmarMaterialSiguiente, activarOrden, pausarOrden, reanudarOrden, cancelarOrden, sustituirMaterialPigmentado } from "./orden.service.js";
+import { listarOrdenes, crearOrden, confirmarMaterialSiguiente, activarOrden, pausarOrden, reanudarOrden, cancelarOrden, sustituirMaterialPigmentado, obtenerOrden } from "./orden.service.js";
 import {
   crearOrdenBodySchema,
   ordenParamsSchema,
@@ -11,6 +11,7 @@ import {
   cambiarEstadoOrdenBodySchema,
   cancelarOrdenBodySchema,
   sustituirMaterialPigmentadoBodySchema,
+  listarOrdenesQuerySchema,
 } from "./orden.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -19,16 +20,35 @@ export default async function ordenRoutes(app: FastifyInstance<any, any, any, an
     "/ordenes",
     {
       preHandler: [app.authenticate],
-      schema: { response: { 200: listaOrdenResponseSchema } },
+      schema: { 
+        querystring: listarOrdenesQuerySchema, 
+        response: { 200: listaOrdenResponseSchema } 
+      },
     },
     async (request, reply) => {
-      return reply.send(await listarOrdenes());
+      return reply.send(await listarOrdenes(request.query));
     }
   );
 
+  // ---------- Visualizar una orden (cualquiera)
+  app.get(
+    "/ordenes/:id",
+    {
+      schema: { params: ordenParamsSchema, response: {200: ordenResponseSchema, 404: errorResponseSchema}} 
+    },
+    async (request, reply) => {
+      try {
+        return reply.send(await obtenerOrden(BigInt(request.params.id)));
+      } catch (err) {
+        if(manejarErrorConocido(err, reply)) return;
+        throw err;
+      }
+    }
+  )
+
   // Exclusivo de ADMIN: crear órdenes
   app.register(async function adminRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
-    app.addHook("preHandler", app.authorize(["ADMIN"]));
+    app.addHook("preHandler", app.authorize(["ADMIN", "PROGRAMADOR"]));
 
     // ---------- Crear nueva orden
     app.post(

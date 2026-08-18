@@ -85,6 +85,7 @@ export const ordenResponseSchema = Type.Object({
   productoId: Type.String(),
   productoNombre: Type.String(),
   totalPiezas: Type.Integer(),
+  piezasProducidas: Type.Integer(),
   observaciones: Type.Union([Type.String(), Type.Null()]),
   tipoMaterial: tipoMaterialOrdenSchema,
   materiaPrimaId: Type.String(),
@@ -130,3 +131,12 @@ export const sustituirMaterialPigmentadoBodySchema = Type.Object({
 });
 
 export type SustituirMaterialPigmentadoBody = Static<typeof sustituirMaterialPigmentadoBodySchema>;
+
+// ---------- QueryParams ----------
+
+export const listarOrdenesQuerySchema = Type.Object({
+  estado: Type.Optional(estadoOrdenSchema), // permite filtrar por un estado específico
+  excluirFinalizadas: Type.Optional(Type.Boolean()), // excluye COMPLETADA y CANCELADA de golpe
+});
+
+export type ListarOrdenesQuerySchema = Static<typeof listarOrdenesQuerySchema>

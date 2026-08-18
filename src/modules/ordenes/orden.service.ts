@@ -8,12 +8,20 @@ import {
 import type { PrismaTransactionClient } from "../../shared/inventario/movimiento-inventario.types.js";
 import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import type { AuthUser } from "../../types/fastify.js";
-import type { CrearOrdenBody, CancelarOrdenBody, SustituirMaterialPigmentadoBody } from "./orden.schema.js";
+import type { CrearOrdenBody, CancelarOrdenBody, SustituirMaterialPigmentadoBody, ListarOrdenesQuerySchema } from "./orden.schema.js";
 import { redondear3 } from "../../utils/redondear3.js";
 
 const FACTOR_COLCHON = 1.05;
 
-function serializar(orden: any) {
+export async function calcularPiezasProducidas(ordenId: bigint): Promise<number> {
+  const agregado = await prisma.avanceTurno.aggregate({
+    where: { ordenId, estado: "CERRADO" },
+    _sum: { piezasBuenas: true },
+  });
+  return agregado._sum.piezasBuenas ?? 0;
+}
+
+function serializar(orden: any, piezasProducidas: number) {
   return {
     id: orden.id.toString(),
     folio: orden.folio,
@@ -25,6 +33,7 @@ function serializar(orden: any) {
     productoId: orden.productoId.toString(),
     productoNombre: orden.producto.nombre,
     totalPiezas: orden.totalPiezas,
+    piezasProducidas,
     observaciones: orden.observaciones,
     tipoMaterial: orden.tipoMaterial,
     materiaPrimaId: orden.materiaPrimaId.toString(),
@@ -67,12 +76,29 @@ const includeCompleto = {
   },
 };
 
-export async function listarOrdenes() {
+export async function listarOrdenes(query: ListarOrdenesQuerySchema) {
   const ordenes = await prisma.ordenProduccion.findMany({
+    where: {
+      ...(query.estado !== undefined && { estado: query.estado }),
+      ...(query.excluirFinalizadas && { estado: { notIn: ["COMPLETADA", "CANCELADA"] } }),
+    },
     include: includeCompleto,
     orderBy: { createdAt: "desc" },
   });
-  return ordenes.map(serializar);
+  return Promise.all(
+    ordenes.map(async (orden) => {
+      const piezasProducidas = await calcularPiezasProducidas(orden.id);
+      return serializar(orden, piezasProducidas);
+    })
+  );
+}
+
+export async function obtenerOrden(id: bigint) {
+  const orden = await prisma.ordenProduccion.findUnique({ where: { id }, include: includeCompleto });
+  if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
+
+  const piezasProducidas = await calcularPiezasProducidas(orden.id);
+  return serializar(orden, piezasProducidas);
 }
 
 export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: string) {
@@ -109,6 +135,11 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
   if (!pigmento) throw new Error("PIGMENTO_NO_ENCONTRADO");
   if (!maquina) throw new Error("MAQUINA_NO_ENCONTRADA");
 
+  // Nuevo: rechazar si cualquiera está desactivado
+  if (!producto.activo) throw new Error("PRODUCTO_INACTIVO");
+  if (!materiaPrima.activo) throw new Error("MATERIA_PRIMA_INACTIVA");
+  if (!pigmento.activo) throw new Error("PIGMENTO_INACTIVO");
+  if (maquina.estado !== "ACTIVA") throw new Error("MAQUINA_NO_DISPONIBLE"); 
 
   // La materia prima debe ser compatible con el tipo de materia prima del producto
   if(producto.tipoMaterial !== materiaPrima.tipo){
@@ -284,7 +315,9 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
     include: includeCompleto,
   });
 
-  return serializar(final);
+  const piezasProducidas = await calcularPiezasProducidas(ordenCreada.id)
+
+  return serializar(final, piezasProducidas);
 }
 
 export async function activarOrden(id: bigint, actor: AuthUser, ip?: string) {
@@ -333,9 +366,18 @@ export async function reanudarOrden(id: bigint, actor: AuthUser, ip?: string) {
   if (!orden) throw new Error("ORDEN_NO_ENCONTRADA");
   if (orden.estado !== "PAUSADA") throw new Error("ORDEN_NO_SE_PUEDE_REANUDAR");
 
-  // Nota: al reanudar, no sabemos si venía de ACTIVA o EN_PROGRESO sin avances_turno.
-  // Por ahora, siempre regresa a ACTIVA — se ajustará cuando exista el historial de avances.
-  await prisma.ordenProduccion.update({ where: { id }, data: { estado: "ACTIVA" } });
+  // Si ya existe al menos un avance de turno para esta orden, ya se había empezado a trabajar
+  const tieneAvances = await prisma.avanceTurno.findFirst({
+    where: { ordenId: id },
+    select: { id: true }, // solo necesitamos saber si existe, no traer el registro completo
+  });
+
+  const nuevoEstado = tieneAvances ? "EN_PROGRESO" : "ACTIVA";
+
+  await prisma.ordenProduccion.update({ 
+    where: { id }, 
+    data: { estado: nuevoEstado } 
+  });
 
   await registrarAccion({
     usuarioId: actor.id,
@@ -345,6 +387,7 @@ export async function reanudarOrden(id: bigint, actor: AuthUser, ip?: string) {
     accion: "reanudar",
     entidad: "orden_produccion",
     entidadId: id,
+    detalle: `Reanudada a estado ${nuevoEstado}`,
     ...(ip !== undefined && { ip }),
   });
 }
@@ -576,5 +619,7 @@ export async function sustituirMaterialPigmentado(
     include: includeCompleto,
   });
 
-  return serializar(final);
+  const piezasProducidas = await calcularPiezasProducidas(ordenId);
+
+  return serializar(final, piezasProducidas);
 }
