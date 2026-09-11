@@ -204,7 +204,7 @@ export type ListarIncidenciasQuery = Static<typeof listarIncidenciasQuerySchema>
 // ---------- Confirmar recepción en molino ----------
 
 export const confirmarIncidenciaMolinoBodySchema = Type.Object({
-  confirmado: Type.Boolean(),
+  piezasRecibidas: Type.Integer({ minimum: 0 }),
 });
 
 export type ConfirmarIncidenciaMolinoBody = Static<typeof confirmarIncidenciaMolinoBodySchema>;
@@ -240,6 +240,8 @@ export const incidenciaResponseSchema = Type.Object({
   piezasAfectadas: Type.Integer(),
   destino: destinoPiezasMalPigmentadasSchema,
   confirmadoMolino: Type.Union([Type.Boolean(), Type.Null()]),
+  piezasRecibidas: Type.Union([Type.Integer(), Type.Null()]),
+  hayDiferenciaMolino: Type.Union([Type.Boolean(), Type.Null()]),
   resuelto: Type.Boolean(),
   tipoMaterialAgregado: Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO"), Type.Null()]),
   kgMaterialAgregado: Type.Union([Type.Number(), Type.Null()]),
@@ -247,6 +249,7 @@ export const incidenciaResponseSchema = Type.Object({
   materiaPrimaNombre: Type.String(), 
   pigmentoColor: Type.String(),   
   ordenFolio: Type.String(), 
+  supervisorNombre: Type.String(),
 });
 
 // =========== SCHEMA DE TIEMPOS PARO =============

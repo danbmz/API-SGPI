@@ -447,6 +447,8 @@ model PedidoDetalle {
   // o si ya lo especifica, aquí queda registrado
 
   cantidadSolicitada Int
+  cantidadProducida  Int      @default(0)
+  cantidadEntregada  Int      @default(0)
 
   createdAt   DateTime @default(now())
 
@@ -713,6 +715,8 @@ model IncidenciaMaterialMalPigmentado {
 
   // Confirmación de molino — solo aplica si destino = MOLINO
   confirmadoMolino       Boolean?
+  piezasRecibidas        Int?       
+  hayDiferenciaMolino    Boolean? 
   confirmadoMolinoPorId  BigInt?
   confirmadoMolinoPor    Usuario? @relation("IncidenciaConfirmadaMolino", fields: [confirmadoMolinoPorId], references: [id])
   confirmadoMolinoEn     DateTime?

@@ -100,6 +100,7 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   PEDIDO_NO_SE_PUEDE_MODIFICAR: { code: 409, message: "El pedido ya no se puede modificar"},
   PEDIDO_REQUERIDO_PARA_ENTREGA: {code: 409, message: "Indica el pedido al que pertenece esta salida"},
   PRODUCTO_NO_PERTENECE_AL_PEDIDO: {code: 409, message: "Este producto no forma parte del pedido"},
+  CANTIDAD_EXCEDE_LO_SOLICITADO: {code: 409, message: "No puedes entregar más producto del solicitado"},
   // ERRORES DE LINEA (PEDIDODETALLE)
   PEDIDO_DETALLE_NO_ENCONTRADO: {code: 404, message: "Detalle de pedido no encontrado"},
   STOCK_INSUFICIENTE_PRODUCTO: {code: 409, message: "Stock de producto insuficiente"},

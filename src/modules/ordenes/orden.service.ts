@@ -39,10 +39,15 @@ function serializar(orden: any, piezasProducidas: number) {
     materiaPrimaId: orden.materiaPrimaId.toString(),
     materiaPrimaNombre: orden.materiaPrima.nombre,
     inventarioMolidoId: orden.inventarioMolidoId ? orden.inventarioMolidoId.toString() : null,
+    inventarioMolidoDescripcion: orden.inventarioMolido
+  ? `${orden.inventarioMolido.tipoMaterial} ${orden.inventarioMolido.origen} — ${orden.inventarioMolido.colorSolido.nombre}`
+  : null,
     porcentajeVirgen: Number(orden.porcentajeVirgen),
     porcentajeMolido: Number(orden.porcentajeMolido),
     pigmentoId: orden.pigmentoId.toString(),
     pigmentoColor: orden.pigmento.color,
+    pigmentoCategoria: orden.pigmento.categoriaColor,
+    pigmentoTipo: orden.pigmento.tipo,
     aditivoDescripcion: orden.aditivoDescripcion,
     maquinaId: orden.maquinaId.toString(),
     maquinaNombre: orden.maquina.nombre,
@@ -74,6 +79,7 @@ const includeCompleto = {
       pedido: true,
     },
   },
+  inventarioMolido: { include: { colorSolido: true } },
 };
 
 export async function listarOrdenes(query: ListarOrdenesQuerySchema) {

@@ -1,3 +1,4 @@
+import type { PedidoDetalle, Prisma } from "../../../prisma/generated/prisma/client/browser.js";
 import { prisma } from "../../lib/prisma.js";
 import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 import {
@@ -323,22 +324,35 @@ export async function registrarSalidaProducto(
     throw new Error("PEDIDO_REQUERIDO_PARA_ENTREGA");
   }
 
+  // Tipo especial para tipar una variable que contendra el valor crudo que devuelve Prisma (valores decimal, bigInt, etc).
+  type PedidoConDetalle = Prisma.PedidoGetPayload<{ include: { detalle: true } }>;
+  let pedido: PedidoConDetalle | null = null;
   let pedidoId: bigint | undefined;
+
   if (data.pedidoId !== undefined) {
     pedidoId = BigInt(data.pedidoId);
-    const pedido = await prisma.pedido.findUnique({
+    pedido = await prisma.pedido.findUnique({
       where: { id: pedidoId },
       include: { detalle: true },
     });
     if (!pedido) throw new Error("PEDIDO_NO_ENCONTRADO");
     if (pedido.estado === "CANCELADO") throw new Error("PEDIDO_CANCELADO");
 
-    // Validación flexible: cada producto del envío debe existir en alguna línea del pedido
-    // (sin importar color ni cantidad exacta)
-    const productosDelPedido = new Set(pedido.detalle.map((d) => d.productoId.toString()));
+    // Validación flexible: que el producto sea el mismo que los indicados en los detalles y que la cantidad no sea superior a la indicada.
     for (const item of data.items) {
-      if (!productosDelPedido.has(item.productoId)) {
+      const lineaCoincidente = pedido.detalle.find(
+        (d) =>
+          d.productoId === BigInt(item.productoId) &&
+          (d.pigmentoId === null || d.pigmentoId === BigInt(item.pigmentoId))
+      );
+      if (!lineaCoincidente) {
         throw new Error("PRODUCTO_NO_PERTENECE_AL_PEDIDO");
+      }
+
+      // Nueva validación: no exceder lo solicitado
+      const cantidadRestante = lineaCoincidente.cantidadSolicitada - lineaCoincidente.cantidadEntregada;
+      if (item.cantidad > cantidadRestante) {
+        throw new Error("CANTIDAD_EXCEDE_LO_SOLICITADO");
       }
     }
   }
@@ -359,6 +373,7 @@ export async function registrarSalidaProducto(
     }
   }
 
+  // Registramos el movimiento en el historial y si es salida de un pedido entonces sumamos la nueva cantidad de salida a el valor que ya tenia dicho pedido.
   await prisma.$transaction(async (tx) => {
     for (const item of data.items) {
       await registrarMovimientoProducto(
@@ -377,6 +392,17 @@ export async function registrarSalidaProducto(
         },
         tx as unknown as PrismaTransactionClient
       );
+
+      if (data.motivo === "ENTREGA_PEDIDO" && pedido) {
+        const lineaCoincidente = pedido.detalle.find(
+          (d) => d.productoId === BigInt(item.productoId) &&
+            (d.pigmentoId === null || d.pigmentoId === BigInt(item.pigmentoId))
+        );
+        await tx.pedidoDetalle.update({
+          where: { id: lineaCoincidente!.id },
+          data: { cantidadEntregada: { increment: item.cantidad } },
+        });
+      }
     }
   });
 

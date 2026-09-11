@@ -18,6 +18,7 @@ import {
   listaPedidoResponseSchema,
   okResponseSchema,
   errorResponseSchema,
+  listarPedidosQuerySchema,
 } from "./pedido.schema.js";
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
@@ -27,9 +28,9 @@ export default async function pedidoRoutes(app: FastifyInstance<any, any, any, a
   // Listar pedidos  
   app.get(
     "/pedidos",
-    { schema: { response: { 200: listaPedidoResponseSchema } } },
+    { schema: { querystring: listarPedidosQuerySchema ,response: { 200: listaPedidoResponseSchema } } },
     async (request, reply) => {
-      return reply.send(await listarPedidos());
+      return reply.send(await listarPedidos(request.query));
     }
   );
 

@@ -29,14 +29,12 @@ const includeCompleto = {
 
 export async function listarPendientesMoler(tipoMaterial?: string) {
   const avances = await prisma.avanceTurno.findMany({
-    where: {
-      confirmacionMolinoConfirmado: true,
-      moliendas: { none: {} }, // que no esté ya incluido en ninguna molienda
+    where: { confirmacionMolinoConfirmado: true, moliendas: { none: {} }, // que no esté ya incluido en ninguna molienda
       ...(tipoMaterial !== undefined && {
         orden: { materiaPrima: { tipo: tipoMaterial as any } },
       }),
     },
-    include: { orden: { include: { pigmento: true } } },
+    include: { orden: { include: { pigmento: true, materiaPrima: true } } },
   });
 
   const incidencias = await prisma.incidenciaMaterialMalPigmentado.findMany({
@@ -48,13 +46,14 @@ export async function listarPendientesMoler(tipoMaterial?: string) {
         avanceTurno: { orden: { materiaPrima: { tipo: tipoMaterial as any } } },
       }),
     },
-    include: { avanceTurno: { include: { orden: { include: { pigmento: true } } } } },
+    include: { avanceTurno: { include: { orden: { include: { pigmento: true, materiaPrima: true } } } } },
   });
 
   return {
     avances: avances.map((a) => ({
       id: a.id.toString(),
       ordenFolio: a.orden.folio,
+      ordenTipoMaterial: a.orden.materiaPrima.tipo, 
       pigmentoColor: a.orden.pigmento.color,
       kgMerma: Number(a.kgMerma),
       kgPlasta: Number(a.kgPlasta),
@@ -64,6 +63,7 @@ export async function listarPendientesMoler(tipoMaterial?: string) {
     incidencias: incidencias.map((i) => ({
       id: i.id.toString(),
       ordenFolio: i.avanceTurno.orden.folio,
+      ordenTipoMaterial: i.avanceTurno.orden.materiaPrima.tipo, 
       pigmentoColor: i.avanceTurno.orden.pigmento.color,
       piezasAfectadas: i.piezasAfectadas,
     })),

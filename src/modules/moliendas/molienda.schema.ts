@@ -26,6 +26,7 @@ export type MoliendaParams = Static<typeof moliendaParamsSchema>;
 export const avancePendienteSchema = Type.Object({
   id: Type.String(),
   ordenFolio: Type.String(),
+  ordenTipoMaterial: tipoMaterialSchema,
   pigmentoColor: Type.String(),
   kgMerma: Type.Number(),
   kgPlasta: Type.Number(),
@@ -36,6 +37,7 @@ export const avancePendienteSchema = Type.Object({
 export const incidenciaPendienteSchema = Type.Object({
   id: Type.String(),
   ordenFolio: Type.String(),
+  ordenTipoMaterial: tipoMaterialSchema,
   pigmentoColor: Type.String(),
   piezasAfectadas: Type.Integer(),
 });

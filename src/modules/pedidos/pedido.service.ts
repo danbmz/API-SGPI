@@ -7,6 +7,7 @@ import type {
   EditarPedidoBody,
   CancelarPedidoBody,
   CrearPedidoDetalleBody,
+  ListarPedidosQuery,
 } from "./pedido.schema.js";
 import { cancelarOrden } from "../ordenes/orden.service.js";
 
@@ -19,29 +20,29 @@ async function serializar(pedido: any) {
   const detalleConProgreso = await Promise.all(
     pedido.detalle.map(async (linea: any) => {
       // agregado es la suma de todas las piezasBuenas de todos los avances 
-      const agregado = await prisma.avanceTurno.aggregate({
-        where: {
-          orden: { pedidoDetalleId: linea.id },
-          estado: "CERRADO",
-        },
-        _sum: { piezasBuenas: true },
-      });
+      // const agregado = await prisma.avanceTurno.aggregate({
+      //   where: {
+      //     orden: { pedidoDetalleId: linea.id },
+      //     estado: "CERRADO",
+      //   },
+      //   _sum: { piezasBuenas: true },
+      // });
 
-      const movimientosEntrega = await prisma.historialMovimientoInventario.aggregate({
-        where: {
-          tipoInventario: "PRODUCTO",
-          productoId: linea.productoId,
-          ...(linea.pigmentoId !== null && { pigmentoProductoId: linea.pigmentoId }),
-          motivo: "ENTREGA_PEDIDO",
-          referenciaTipo: "PEDIDO",
-          referenciaId: pedido.id,
-        },
-        _sum: { cantidadMovimiento: true },
-      });
+      // const movimientosEntrega = await prisma.historialMovimientoInventario.aggregate({
+      //   where: {
+      //     tipoInventario: "PRODUCTO",
+      //     productoId: linea.productoId,
+      //     ...(linea.pigmentoId !== null && { pigmentoProductoId: linea.pigmentoId }),
+      //     motivo: "ENTREGA_PEDIDO",
+      //     referenciaTipo: "PEDIDO",
+      //     referenciaId: pedido.id,
+      //   },
+      //   _sum: { cantidadMovimiento: true },
+      // });
 
       // cantidadMovimiento es negativo en salidas, así que invertimos el signo
-      const cantidadEntregada = Math.abs(Number(movimientosEntrega._sum.cantidadMovimiento ?? 0));
-      const cantidadProducida = agregado._sum.piezasBuenas ?? 0;
+      // const cantidadEntregada = Math.abs(Number(movimientosEntrega._sum.cantidadMovimiento ?? 0));
+      // const cantidadProducida = agregado._sum.piezasBuenas ?? 0;
 
       return {
         id: linea.id.toString(),
@@ -50,9 +51,10 @@ async function serializar(pedido: any) {
         tipoMaterial: linea.producto.tipoMaterial,
         pigmentoId: linea.pigmentoId ? linea.pigmentoId.toString() : null,
         pigmentoColor: linea.pigmento ? linea.pigmento.color : null,
+        categoriaColor: linea.pigmento ? linea.pigmento.categoriaColor : null,
         cantidadSolicitada: linea.cantidadSolicitada,
-        cantidadProducida,
-        cantidadEntregada: Number(cantidadEntregada),
+        cantidadProducida: linea.cantidadProducida,
+        cantidadEntregada: linea.cantidadEntregada,
       };
     })
   );
@@ -79,12 +81,32 @@ async function serializar(pedido: any) {
   };
 }
 
-export async function listarPedidos() {
-  const pedidos = await prisma.pedido.findMany({
-    include: includeCompleto,
-    orderBy: { createdAt: "desc" },
-  });
-  return Promise.all(pedidos.map(serializar));
+export async function listarPedidos(query: ListarPedidosQuery) {
+  const pagina = query.pagina ?? 1;
+  const limite = query.limite ?? 20;
+
+  const [pedidos, total] = await Promise.all([
+    prisma.pedido.findMany({
+      where: { ...(query.estado !== undefined && { estado: query.estado }) },
+      include: includeCompleto,
+      orderBy: { createdAt: "desc" },
+      skip: (pagina - 1) * limite,
+      take: limite,
+    }),
+    prisma.pedido.count({
+      where: { ...(query.estado !== undefined && { estado: query.estado }) },
+    }),
+  ]);
+
+  return {
+    data: await Promise.all(pedidos.map(serializar)),
+    paginacion: {
+      pagina,
+      limite,
+      total,
+      totalPaginas: Math.ceil(total / limite),
+    },
+  };
 }
 
 export async function obtenerPedido(id: bigint) {

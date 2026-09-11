@@ -112,6 +112,8 @@ function serializarIncidencia(inc: any) {
     piezasAfectadas: inc.piezasAfectadas,
     destino: inc.destino,
     confirmadoMolino: inc.confirmadoMolino,
+    piezasRecibidas: inc.piezasRecibidas,                    
+    hayDiferenciaMolino: inc.hayDiferenciaMolino, 
     resuelto: inc.resuelto,
     tipoMaterialAgregado: inc.tipoMaterialAgregado,
     kgMaterialAgregado: inc.kgMaterialAgregado !== null ? Number(inc.kgMaterialAgregado) : null,
@@ -120,6 +122,7 @@ function serializarIncidencia(inc: any) {
     materiaPrimaNombre: inc.avanceTurno.orden.materiaPrima.nombre, 
     pigmentoColor: inc.avanceTurno.orden.pigmento.color,   
     ordenFolio: inc.avanceTurno.orden.folio,   
+    supervisorNombre: inc.avanceTurno.supervisor.nombre, 
   };
 }
 
@@ -136,7 +139,7 @@ export async function listarAvancesTurno(actor: AuthUser, query: ListarAvancesTu
       }),
       ...(query.sobranteConfirmado !== undefined && {
         sobranteConfirmado: query.sobranteConfirmado,
-        kgSobrante: { not: null }, // solo los que realmente reportaron sobrante
+        kgSobrante: { not: null, gt: 0 }, // solo los que realmente reportaron sobrante
       }),
     },
     include: includeCompleto,
@@ -233,6 +236,7 @@ export async function listarIncidenciasMalPigmentado(filtro: ListarIncidenciasQu
     include: {
       avanceTurno: {
         include: {
+          supervisor: true,
           orden: { 
             include: {
                 materiaPrima: true,
@@ -393,6 +397,7 @@ export async function cerrarAvanceTurno(
   }
 
   const resultado = await prisma.$transaction(async (tx) => {
+    // 1.- Actualizamos la informacion del avance en la DB
     await tx.avanceTurno.update({
       where: { id },
       data: {
@@ -418,6 +423,7 @@ export async function cerrarAvanceTurno(
       },
     });
 
+    // 2.- Si hubo piezas buenas, entonces registramos movimiento de entrada de producto a inventario
     if (data.piezasBuenas > 0) {
       await registrarMovimientoProducto(
         {
@@ -433,6 +439,14 @@ export async function cerrarAvanceTurno(
         tx as unknown as PrismaTransactionClient
       );
     }
+
+    // 3.- Incrementamos inmediatamente el numero de piezas producidas del detalle de pedido completo al que pertenece el avance.
+    const orden = await tx.ordenProduccion.findUniqueOrThrow({ where: { id: avance.ordenId } });
+
+    await tx.pedidoDetalle.update({
+      where: { id: orden.pedidoDetalleId },
+      data: { cantidadProducida: { increment: data.piezasBuenas } },
+    });
 
     // ---------- Verificar si la orden se completa con este cierre ----------
     const agregado = await tx.avanceTurno.aggregate({ // aggregate indica a la base que haga calculos sobre un conjunto de filas, basicamente suma todos los numeros de cada columna "piezasBuenas" de cada avance que tenga el ordenId.
@@ -455,7 +469,7 @@ export async function cerrarAvanceTurno(
       });
       ordenCompletada = true;
 
-    // ---------- Verificar si TODO el pedido se completa con esto ----------
+      // ---------- Verificar si TODO el pedido se completa con esto ----------
       const pedidoId = avance.orden.pedidoDetalle.pedidoId;
 
       const detallesDelPedido = await tx.pedidoDetalle.findMany({
@@ -551,12 +565,16 @@ export async function crearSolicitudMaterial(
       confirmadoPor: true,
       avanceTurno: {
         include: {
+          supervisor: true,
           orden: {
-            include: {
-              materiaPrima: true,
-              pigmento: true,
-              inventarioMolido: { include: { colorSolido: true } },
-            },
+            include: { 
+              materiaPrima: true, 
+              pigmento: true, 
+              maquina: true, 
+              inventarioMolido: { 
+                include: { 
+                  colorSolido: true 
+                } } },
           },
         },
       },
@@ -616,14 +634,7 @@ export async function crearIncidenciaMalPigmentado(
 ) {
   const avance = await prisma.avanceTurno.findUnique({
     where: { id: avanceTurnoId },
-    include: { 
-      orden: {
-        include: {
-          materiaPrima: true,
-          pigmento: true,
-        }
-      } 
-    },
+    include: { orden: true },
   });
   if (!avance) throw new Error("AVANCE_TURNO_NO_ENCONTRADO");
   if (avance.supervisorId !== actor.id) throw new Error("AVANCE_TURNO_NO_PROPIO");
@@ -670,7 +681,21 @@ export async function crearIncidenciaMalPigmentado(
     ...(ip !== undefined && { ip }),
   });
 
-  return serializarIncidencia(nueva);
+  const incidenciaCompleta = await prisma.incidenciaMaterialMalPigmentado.findUniqueOrThrow({
+    where: { id: nueva.id },
+    include: {
+      avanceTurno: {
+        include: {
+          supervisor: true,
+          orden: {
+            include: { materiaPrima: true, pigmento: true },
+          },
+        },
+      },
+    },
+  });
+
+  return serializarIncidencia(incidenciaCompleta);
 }
 
 // ========= Acciones del encargado de molino =========
@@ -912,16 +937,21 @@ export async function confirmarIncidenciaMolino(
   if (incidencia.destino !== "MOLINO") throw new Error("INCIDENCIA_NO_ES_PARA_MOLINO");
   if (incidencia.confirmadoMolino !== null) throw new Error("INCIDENCIA_YA_CONFIRMADA_MOLINO");
 
+  const hayDiferencia = data.piezasRecibidas !== incidencia.piezasAfectadas;
+
   const actualizada = await prisma.incidenciaMaterialMalPigmentado.update({
     where: { id },
     data: {
-      confirmadoMolino: data.confirmado,
+      confirmadoMolino: true,       // siempre true: molino SÍ recibió algo
+      piezasRecibidas: data.piezasRecibidas,
+      hayDiferenciaMolino: hayDiferencia,
       confirmadoMolinoPorId: actor.id,
       confirmadoMolinoEn: new Date(),
     },
     include: {
       avanceTurno: {
         include: {
+          supervisor: true,
           orden: {
             include: {
               materiaPrima: true,
@@ -1064,6 +1094,7 @@ export async function resolverIncidencia(
     include: {
       avanceTurno: {
         include: {
+          supervisor: true,
           orden: {
             include: {
               materiaPrima: true,

@@ -13,6 +13,14 @@ const tipoMaterialSchema = Type.Union([
   Type.Literal("POLIETILENO"),
 ]);
 
+const categoriaColorPigmentoSchema = Type.Union([
+  Type.Literal("SOLIDO"),
+  Type.Literal("SOLIDO_PASTEL"),
+  Type.Literal("NEON_TRASLUCIDO"),
+  Type.Literal("JARRA_NEON_PASTEL"),
+  Type.Literal("NATURAL"),
+]);
+
 // ---------- Crear pedido ----------
 
 export const crearPedidoBodySchema = Type.Object({
@@ -68,9 +76,10 @@ export const pedidoDetalleResponseSchema = Type.Object({
   tipoMaterial: tipoMaterialSchema,
   pigmentoId: Type.Union([Type.String(), Type.Null()]),
   pigmentoColor: Type.Union([Type.String(), Type.Null()]),
+  categoriaColor: Type.Union([categoriaColorPigmentoSchema, Type.Null()]),
   cantidadSolicitada: Type.Integer(),
-  cantidadProducida: Type.Integer(), // calculada: suma de órdenes que cubren esta línea
-  cantidadEntregada: Type.Number(), // calculada: suma de todas las salidas de inventario que cubren esta linea
+  cantidadProducida: Type.Integer(), // ahora es parte de la tabla
+  cantidadEntregada: Type.Integer(), // ahora es parte de la tabla
 });
 
 export const pedidoResponseSchema = Type.Object({
@@ -87,7 +96,28 @@ export const pedidoResponseSchema = Type.Object({
   createdAt: Type.String(),
 });
 
-export const listaPedidoResponseSchema = Type.Array(pedidoResponseSchema);
-
 export const okResponseSchema = Type.Object({ ok: Type.Boolean() });
 export const errorResponseSchema = Type.Object({ error: Type.String() });
+
+// --------------- QUERY STRINGS -----------
+
+export const listarPedidosQuerySchema = Type.Object({
+  estado: Type.Optional(estadoPedidoSchema),
+  pagina: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
+  limite: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+});
+
+export type ListarPedidosQuery = Static<typeof listarPedidosQuerySchema>;
+
+export const paginacionSchema = Type.Object({
+  pagina: Type.Integer(),
+  limite: Type.Integer(),
+  total: Type.Integer(),
+  totalPaginas: Type.Integer(),
+});
+
+// Cambia la forma de la respuesta
+export const listaPedidoResponseSchema = Type.Object({
+  data: Type.Array(pedidoResponseSchema),
+  paginacion: paginacionSchema,
+});
