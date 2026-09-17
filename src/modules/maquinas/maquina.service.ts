@@ -118,6 +118,17 @@ export async function cambiarEstadoMaquina(
     throw new Error("MAQUINA_YA_EN_ESE_ESTADO");
   }
 
+  // Si se intenta sacar la máquina de ACTIVA, verificar que no tenga producción en curso
+  if (data.estado !== "ACTIVA") {
+    const ordenEnCurso = await prisma.ordenProduccion.findFirst({
+      where: {
+        maquinaId: id,
+        estado: { in: ["ACTIVA", "EN_PROGRESO"] },
+      },
+    });
+    if (ordenEnCurso) throw new Error("MAQUINA_CON_ORDEN_EN_CURSO");
+  }
+
   const estadoAnterior = maquina.estado;
 
   const actualizada = await prisma.maquina.update({

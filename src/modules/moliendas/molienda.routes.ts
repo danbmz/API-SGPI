@@ -11,7 +11,7 @@ import {
 import { manejarErrorConocido } from "../../shared/errors/error-map.js";
 
 export default async function moliendaRoutes(app: FastifyInstance<any, any, any, any, TypeBoxTypeProvider>) {
-  app.addHook("preHandler", app.authorize(["MOLINO"]));
+  app.addHook("preHandler", app.authorize(["MOLINO", "ADMIN"]));
 
   app.get(
     "/moliendas/pendientes",

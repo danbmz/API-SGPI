@@ -28,6 +28,7 @@ export const crearPedidoBodySchema = Type.Object({
   cliente: Type.String({ minLength: 1, maxLength: 150 }),
   remision: Type.Optional(Type.String({ minLength: 1, maxLength: 150 })),
   descripcion: Type.Optional(Type.String({ maxLength: 500 })),
+  fechaEntrega: Type.Optional(Type.String({ format: "date" })),
 });
 
 export type CrearPedidoBody = Static<typeof crearPedidoBodySchema>;
@@ -37,6 +38,7 @@ export type CrearPedidoBody = Static<typeof crearPedidoBodySchema>;
 export const editarPedidoBodySchema = Type.Object({
   cliente: Type.Optional(Type.String({ minLength: 1, maxLength: 150 })),
   descripcion: Type.Optional(Type.String({ maxLength: 500 })),
+  fechaEntrega: Type.Optional(Type.String({ format: "date" })),
 });
 
 export type EditarPedidoBody = Static<typeof editarPedidoBodySchema>;
@@ -94,6 +96,7 @@ export const pedidoResponseSchema = Type.Object({
   totalOrdenes: Type.Integer(),
   ordenesCompletadas: Type.Integer(),
   createdAt: Type.String(),
+  fechaEntrega: Type.Union([Type.String(), Type.Null()]), 
 });
 
 export const okResponseSchema = Type.Object({ ok: Type.Boolean() });

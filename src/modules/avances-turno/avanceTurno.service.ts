@@ -135,7 +135,15 @@ export async function listarAvancesTurno(actor: AuthUser, query: ListarAvancesTu
       ...where,
       ...(query.estado !== undefined && { estado: query.estado }),
       ...(query.confirmacionMolinoConfirmado !== undefined && {
-        confirmacionMolinoConfirmado: query.confirmacionMolinoConfirmado ? true : null
+        confirmacionMolinoConfirmado: query.confirmacionMolinoConfirmado ? true : null,
+        ...(query.confirmacionMolinoConfirmado === false && {
+        OR: [
+          { kgMerma: { gt: 0 } },
+          { kgPlasta: { gt: 0 } },
+          { piezasDefectuosas: { gt: 0 } },
+          { piezasCambioColor: { gt: 0 } },
+        ],
+      }),
       }),
       ...(query.sobranteConfirmado !== undefined && {
         sobranteConfirmado: query.sobranteConfirmado,

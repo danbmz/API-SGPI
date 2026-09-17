@@ -466,6 +466,7 @@ model Pedido {
   descripcion     String?      // notas generales, ya no el detalle de productos
 
   estado          EstadoPedido @default(PENDIENTE)
+  fechaEntrega DateTime? @db.Date 
 
   activo          Boolean      @default(true)
   createdAt       DateTime     @default(now())

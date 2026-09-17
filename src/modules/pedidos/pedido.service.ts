@@ -78,6 +78,7 @@ async function serializar(pedido: any) {
     totalOrdenes,
     ordenesCompletadas,
     createdAt: pedido.createdAt.toISOString(),
+    fechaEntrega: pedido.fechaEntrega ? pedido.fechaEntrega.toISOString().split("T")[0] : null,
   };
 }
 
@@ -123,7 +124,9 @@ export async function crearPedido(data: CrearPedidoBody, actor: AuthUser, ip?: s
     data: {
       numeroPedido: data.numeroPedido,
       cliente: data.cliente,
+      ...(data.remision !== undefined && { remision: data.remision}),
       ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
+      ...(data.fechaEntrega !== undefined && { fechaEntrega: new Date(data.fechaEntrega) }),
       estado: "PENDIENTE",
     },
   });
@@ -150,7 +153,7 @@ export async function editarPedido(
 ) {
   const pedido = await prisma.pedido.findUnique({ where: { id } });
   if (!pedido) throw new Error("PEDIDO_NO_ENCONTRADO");
-  if (pedido.estado === "CANCELADO") throw new Error("PEDIDO_CANCELADO");
+  if (pedido.estado === "CANCELADO" || pedido.estado === "COMPLETADO") throw new Error("PEDIDO_CANCELADO");
 
   const detalle = compararCambios(pedido, data, { cliente: "cliente", descripcion: "descripción" });
 
@@ -159,6 +162,7 @@ export async function editarPedido(
     data: {
       ...(data.cliente !== undefined && { cliente: data.cliente }),
       ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
+      ...(data.fechaEntrega !== undefined && { fechaEntrega: new Date(data.fechaEntrega) }),
     },
   });
 
@@ -194,7 +198,7 @@ export async function cancelarPedido(
 
   // Aplanamos el arreglo con flatMap para poder iterar todas las ordenes de cada detalle, juntas (como en la funcion serializar).
   const todasLasOrdenes = pedido.detalle.flatMap((linea) => linea.ordenes);
-  const hayOrdenEnProgreso = todasLasOrdenes.some((o) => o.estado === "EN_PROGRESO");
+  const hayOrdenEnProgreso = todasLasOrdenes.some((o) => o.estado === "EN_PROGRESO" || o.estado === "PAUSADA");
   if (hayOrdenEnProgreso) {
     throw new Error("PEDIDO_TIENE_ORDENES_EN_PROGRESO");
   }

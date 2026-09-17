@@ -118,7 +118,7 @@ export async function crearOrden(data: CrearOrdenBody, actor: AuthUser, ip?: str
     include: {pedido: true},
   });
   if (!detalle) throw new Error("PEDIDO_DETALLE_NO_ENCONTRADO");
-  if (detalle.pedido.estado === "CANCELADO") throw new Error("PEDIDO_CANCELADO");
+  if (detalle.pedido.estado === "CANCELADO" || detalle.pedido.estado === "COMPLETADO") throw new Error("PEDIDO_CANCELADO");
   
   const productoId = BigInt(data.productoId);
   const materiaPrimaId = BigInt(data.materiaPrimaId);

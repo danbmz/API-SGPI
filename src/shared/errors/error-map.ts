@@ -29,6 +29,7 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   MAQUINA_YA_EXISTE: {code: 409, message: "Maquina ya registrada"},
   MAQUINA_NUMERO_YA_EXISTE: {code: 409, message: "Ya existe una maquina con el mismo número"}, 
   MAQUINA_YA_EN_ESE_ESTADO: {code: 409, message: "La maquina ya está en ese estado"},
+  MAQUINA_CON_ORDEN_EN_CURSO: {code: 409, message: "La maquina tiene una orden en curso"},
   // ERRORES MOTIVOS PARO
   MOTIVO_PARO_NO_ENCONTRADO: {code: 404, message: "Motivo no encontrado"},
   MOTIVO_PARO_YA_EXISTE: {code: 409, message: "Este motivo ya existe"},
@@ -94,9 +95,9 @@ export const ERROR_HTTP_MAP: Record<string, { code: number; message: string }> =
   // ERRORES DE PEDIDOS
   PEDIDO_NO_ENCONTRADO: { code: 404, message: "Pedido no encontrado"},
   PEDIDO_NUMERO_YA_EXISTE: { code: 409, message: "Ya existe un pedido con el mismo número"},
-  PEDIDO_CANCELADO: { code: 409, message: "Pedido cancelado, no puedes editarlo"},
+  PEDIDO_CANCELADO: { code: 409, message: "No puedes editar un pedido completado o cancelado"},
   PEDIDO_NO_SE_PUEDE_CANCELAR: { code: 409, message: "El pedido no se puede cancelar"},
-  PEDIDO_TIENE_ORDENES_EN_PROGRESO: { code: 409, message: "El pedido tiene ordenes en progreso"},
+  PEDIDO_TIENE_ORDENES_EN_PROGRESO: { code: 409, message: "El pedido tiene ordenes en progreso o pausadas, primero cancela o completa esas órdenes manualmente antes de cancelar el pedido completo"},
   PEDIDO_NO_SE_PUEDE_MODIFICAR: { code: 409, message: "El pedido ya no se puede modificar"},
   PEDIDO_REQUERIDO_PARA_ENTREGA: {code: 409, message: "Indica el pedido al que pertenece esta salida"},
   PRODUCTO_NO_PERTENECE_AL_PEDIDO: {code: 409, message: "Este producto no forma parte del pedido"},
