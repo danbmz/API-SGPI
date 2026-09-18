@@ -70,6 +70,8 @@ const desempenoOperadorSchema = Type.Object({
   porcentajeDefectos: Type.Number(),
 });
 
+export type DesempenoOperador = Static<typeof desempenoOperadorSchema>
+
 // ---------- Pedidos en progreso ----------
 
 const pedidoEnProgresoSchema = Type.Object({
@@ -92,6 +94,8 @@ const tiemposParoSchema = Type.Object({
   totalMinutos: Type.Integer(),
   porMotivo: Type.Array(tiempoParoPorMotivoSchema),
 });
+
+export type ResumenTiemposParo = Static<typeof tiemposParoSchema>
 
 // ---------- Respuesta completa ----------
 

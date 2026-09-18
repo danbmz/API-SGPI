@@ -22,6 +22,7 @@ import defectoProductoRoutes from "./modules/defectos/defecto.routes.js";
 import moliendaRoutes from "./modules/moliendas/molienda.routes.js";
 import auditoriaRoutes from "./modules/auditoria/auditoria.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
+import reportesRoutes from "./modules/reportes/reportes.routes.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -49,6 +50,7 @@ export function buildApp() {
   app.register(moliendaRoutes)
   app.register(auditoriaRoutes)
   app.register(dashboardRoutes)
+  app.register(reportesRoutes)
 
   return app;
 }

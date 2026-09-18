@@ -1,4 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
+import { calcularDesempenoOperadores } from "../../shared/estadisticas/desempenoOperadores.js";
+import { calcularTiemposParo } from "../../shared/estadisticas/tiemposParo.js";
 import type { ReportesQuery } from "./reportes.schema.js";
 
 type Granularidad = "dia" | "semana" | "mes";
@@ -56,6 +58,8 @@ function generarPeriodosEnRango(desde: Date, hasta: Date, granularidad: Granular
 
   return Array.from(new Set(periodos)); // por si acaso hay claves duplicadas al normalizar semanas
 }
+
+// --------- FUNCIONES PARA VISTA DE REPORTES -----------------
 
 async function obtenerProduccion(query: ReportesQuery) {
   const { desde, hasta } = resolverRango(query);
@@ -173,5 +177,205 @@ async function obtenerCumplimientoPedidos(query: ReportesQuery) {
     sinFechaDefinida,
     porcentajeCumplimiento,
     detalle,
+  };
+}
+
+async function obtenerCostoMermaPlasta(query: ReportesQuery) {
+  const { desde, hasta } = resolverRango(query);
+
+  // Deberiamos traer las columnas de datos confirmados por el encargado de molino?
+  const avances = await prisma.avanceTurno.findMany({
+    where: {
+      estado: "CERRADO",
+      horaFin: { gte: desde, lte: hasta },
+    },
+    select: {
+      kgMerma: true,
+      kgPlasta: true,
+      orden: {
+        select: {
+          materiaPrima: {
+            select: { id: true, nombre: true, costoUnitario: true },
+          },
+        },
+      },
+    },
+  });
+
+  const acumuladoPorMaterial = new Map<
+    string,
+    { nombre: string; kgMerma: number; kgPlasta: number; costoTotal: number }
+  >();
+
+  let costoTotalGeneral = 0;
+
+  for (const avance of avances) {
+    const materiaPrima = avance.orden.materiaPrima;
+    const costoUnitario = Number(materiaPrima.costoUnitario);
+    const kgMerma = Number(avance.kgMerma);
+    const kgPlasta = Number(avance.kgPlasta);
+    const costoAvance = (kgMerma + kgPlasta) * costoUnitario;
+
+    const clave = materiaPrima.id.toString();
+    const actual = acumuladoPorMaterial.get(clave) ?? {
+      nombre: materiaPrima.nombre,
+      kgMerma: 0,
+      kgPlasta: 0,
+      costoTotal: 0,
+    };
+    actual.kgMerma += kgMerma;
+    actual.kgPlasta += kgPlasta;
+    actual.costoTotal += costoAvance;
+    acumuladoPorMaterial.set(clave, actual);
+
+    costoTotalGeneral += costoAvance;
+  }
+
+  const porMaterial = Array.from(acumuladoPorMaterial.values())
+    .map((m) => ({
+      ...m,
+      kgMerma: Math.round(m.kgMerma * 1000) / 1000,
+      kgPlasta: Math.round(m.kgPlasta * 1000) / 1000,
+      costoTotal: Math.round(m.costoTotal * 100) / 100,
+    }))
+    .sort((a, b) => b.costoTotal - a.costoTotal);
+
+  return {
+    costoTotalGeneral: Math.round(costoTotalGeneral * 100) / 100,
+    porMaterial,
+  };
+}
+
+async function obtenerConsumoMateriales(query: ReportesQuery) {
+  const { desde, hasta } = resolverRango(query);
+
+  const [movimientosMateriaPrima, movimientosPigmento] = await Promise.all([
+    prisma.historialMovimientoInventario.findMany({
+      where: {
+        tipoInventario: "MATERIA_PRIMA",
+        tipoMovimiento: "SALIDA",
+        motivo: { in: ["CONSUMO_PRODUCCION", "REPIGMENTAR"] },
+        createdAt: { gte: desde, lte: hasta },
+      },
+      include: {
+        materiaPrima: { select: { id: true, nombre: true, costoUnitario: true } },
+      },
+    }),
+    prisma.historialMovimientoInventario.findMany({
+      where: {
+        tipoInventario: "PIGMENTO",
+        tipoMovimiento: "SALIDA",
+        motivo: { in: ["CONSUMO_PRODUCCION", "REPIGMENTAR"] },
+        createdAt: { gte: desde, lte: hasta },
+      },
+      include: {
+        pigmento: { select: { id: true, color: true, costoUnitario: true } },
+      },
+    }),
+  ]);
+
+  const acumuladoMateriaPrima = new Map<
+    string,
+    { nombre: string; kgConsumidos: number; costoTotal: number }
+  >();
+
+  for (const mov of movimientosMateriaPrima) {
+    const materiaPrima = mov.materiaPrima!;
+    const kg = Math.abs(Number(mov.cantidadMovimiento)); // SALIDA es negativo, normalizamos a positivo
+    const costoUnitario = Number(materiaPrima.costoUnitario);
+
+    const clave = materiaPrima.id.toString();
+    const actual = acumuladoMateriaPrima.get(clave) ?? {
+      nombre: materiaPrima.nombre,
+      kgConsumidos: 0,
+      costoTotal: 0,
+    };
+    actual.kgConsumidos += kg;
+    actual.costoTotal += kg * costoUnitario;
+    acumuladoMateriaPrima.set(clave, actual);
+  }
+
+  const acumuladoPigmento = new Map<
+    string,
+    { color: string; kgConsumidos: number; costoTotal: number }
+  >();
+
+  for (const mov of movimientosPigmento) {
+    const pigmento = mov.pigmento!;
+    const kg = Math.abs(Number(mov.cantidadMovimiento));
+    const costoUnitario = Number(pigmento.costoUnitario);
+
+    const clave = pigmento.id.toString();
+    const actual = acumuladoPigmento.get(clave) ?? {
+      color: pigmento.color,
+      kgConsumidos: 0,
+      costoTotal: 0,
+    };
+    actual.kgConsumidos += kg;
+    actual.costoTotal += kg * costoUnitario;
+    acumuladoPigmento.set(clave, actual);
+  }
+
+  const materiaPrima = Array.from(acumuladoMateriaPrima.values())
+    .map((m) => ({
+      ...m,
+      kgConsumidos: Math.round(m.kgConsumidos * 1000) / 1000,
+      costoTotal: Math.round(m.costoTotal * 100) / 100,
+    }))
+    .sort((a, b) => b.costoTotal - a.costoTotal);
+
+  const pigmento = Array.from(acumuladoPigmento.values())
+    .map((p) => ({
+      ...p,
+      kgConsumidos: Math.round(p.kgConsumidos * 1000) / 1000,
+      costoTotal: Math.round(p.costoTotal * 100) / 100,
+    }))
+    .sort((a, b) => b.costoTotal - a.costoTotal);
+
+  const costoTotalGeneral =
+    materiaPrima.reduce((acc, m) => acc + m.costoTotal, 0) +
+    pigmento.reduce((acc, p) => acc + p.costoTotal, 0);
+
+  return {
+    costoTotalGeneral: Math.round(costoTotalGeneral * 100) / 100,
+    materiaPrima,
+    pigmento,
+  };
+}
+
+async function obtenerDesempenoOperadores(query: ReportesQuery) {
+  const { desde, hasta } = resolverRango(query);
+  return calcularDesempenoOperadores(desde, hasta);
+}
+
+async function obtenerTiemposParo(query: ReportesQuery) {
+  const { desde, hasta } = resolverRango(query);
+  return calcularTiemposParo(desde, hasta); // sin límite, lista completa para el reporte
+}
+
+export async function obtenerReportes(query: ReportesQuery) {
+  const [
+    produccion,
+    cumplimientoPedidos,
+    costoMermaPlasta,
+    consumoMateriales,
+    desempenoOperadores,
+    tiemposParo,
+  ] = await Promise.all([
+    obtenerProduccion(query),
+    obtenerCumplimientoPedidos(query),
+    obtenerCostoMermaPlasta(query),
+    obtenerConsumoMateriales(query),
+    obtenerDesempenoOperadores(query),
+    obtenerTiemposParo(query),
+  ]);
+
+  return {
+    produccion,
+    cumplimientoPedidos,
+    costoMermaPlasta,
+    consumoMateriales,
+    desempenoOperadores,
+    tiemposParo,
   };
 }

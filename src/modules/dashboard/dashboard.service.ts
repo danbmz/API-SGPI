@@ -1,4 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
+import { calcularDesempenoOperadores } from "../../shared/estadisticas/desempenoOperadores.js";
+import { calcularTiemposParo } from "../../shared/estadisticas/tiemposParo.js";
 
 const MATERIAS_PRIMAS_BAJAS_LIMITE = 10; // tope razonable, evita respuestas gigantes si hay muchas
 const DIAS_URGENCIA = 3;
@@ -237,51 +239,14 @@ async function obtenerGraficas() {
   return { produccionPorDia, ordenesPorEstado, defectosFrecuentes };
 }
 
+// Usamos funcion compartida ya que la logica se repite en reportes.service
 async function obtenerDesempenoOperadores() {
   const hace7Dias = new Date();
   hace7Dias.setHours(0, 0, 0, 0);
   hace7Dias.setDate(hace7Dias.getDate() - 6);
+  const hoy = new Date();
 
-  const agrupado = await prisma.avanceTurno.groupBy({
-    by: ["operadorId"],
-    where: {
-      estado: "CERRADO",
-      horaFin: { gte: hace7Dias },
-      operadorId: { not: null },
-    },
-    _sum: {
-      piezasBuenas: true,
-      piezasDefectuosas: true,
-    },
-  });
-
-  // type predicate - le dice explícitamente a TypeScript "después de este filtro, garantizo que el tipo del array cambia de (bigint | null)[] a bigint[]".   
-  const operadorIds = agrupado
-    .map((a) => a.operadorId)
-    .filter((id): id is bigint => id !== null);
-
-  const operadores = await prisma.operador.findMany({
-    where: { id: { in: operadorIds } },
-  });
-  const nombrePorId = new Map(operadores.map((o) => [o.id.toString(), o.nombre]));
-
-  const desempeno = agrupado.map((a) => {
-    const piezasBuenas = a._sum.piezasBuenas ?? 0;
-    const piezasDefectuosas = a._sum.piezasDefectuosas ?? 0;
-    const totalPiezas = piezasBuenas + piezasDefectuosas;
-    const porcentajeDefectos = totalPiezas > 0 ? (piezasDefectuosas / totalPiezas) * 100 : 0;
-
-    return {
-      operadorId: a.operadorId!.toString(),
-      operadorNombre: nombrePorId.get(a.operadorId!.toString()) ?? "Desconocido",
-      piezasBuenas,
-      piezasDefectuosas,
-      porcentajeDefectos: Math.round(porcentajeDefectos * 100) / 100, // 2 decimales
-    };
-  });
-
-  // Ordenado de peor a mejor desempeño, para que lo más urgente aparezca primero en la tabla
-  return desempeno.sort((a, b) => b.porcentajeDefectos - a.porcentajeDefectos);
+  return calcularDesempenoOperadores(hace7Dias, hoy);
 }
 
 async function obtenerPedidosEnProgreso() {
@@ -315,33 +280,9 @@ async function obtenerTiemposParo() {
   const hace7Dias = new Date();
   hace7Dias.setHours(0, 0, 0, 0);
   hace7Dias.setDate(hace7Dias.getDate() - 6);
+  const hoy = new Date();
 
-  const tiemposParo = await prisma.tiempoParo.findMany({
-    where: {
-      avanceTurno: {
-        estado: "CERRADO",
-        horaFin: { gte: hace7Dias },
-      },
-    },
-    include: { motivoParo: true },
-  });
-
-  const acumuladoPorMotivo = new Map<string, { nombre: string; minutos: number }>();
-  for (const tp of tiemposParo) {
-    const clave = tp.motivoParoId.toString();
-    const actual = acumuladoPorMotivo.get(clave) ?? { nombre: tp.motivoParo.nombre, minutos: 0 };
-    actual.minutos += tp.minutos;
-    acumuladoPorMotivo.set(clave, actual);
-  }
-
-  const porMotivo = Array.from(acumuladoPorMotivo.values()).sort((a, b) => b.minutos - a.minutos);
-
-  const totalMinutos = porMotivo.reduce((acc, m) => acc + m.minutos, 0);
-
-  return {
-    totalMinutos,
-    porMotivo: porMotivo.slice(0, 6), // top 6, para no saturar la gráfica
-  };
+  return calcularTiemposParo(hace7Dias, hoy, 6); // top 6, como ya lo teníamos
 }
 
 export async function obtenerDashboard() {
