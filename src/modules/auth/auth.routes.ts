@@ -7,7 +7,7 @@ import {
   rotarRefreshToken,
   revocarRefreshToken,
 } from "./auth.service.js";
-import { loginBodySchema, loginResponseSchema, errorResponseSchema, okResponseSchema } from "./auth.schema.js";
+import { loginBodySchema, loginResponseSchema, errorResponseSchema, okResponseSchema, logoutBodySchema } from "./auth.schema.js";
 import { registrarAccion } from "../../shared/auditoria/auditoria.service.js";
 
 const REFRESH_COOKIE_NAME = "refreshToken";
@@ -134,6 +134,7 @@ export default async function authRoutes(app: FastifyInstance<any, any, any, any
   app.post("/auth/logout",
     {
         schema: {
+            body: logoutBodySchema,
             response: { 200: okResponseSchema },
         }
     }, 
@@ -149,7 +150,7 @@ export default async function authRoutes(app: FastifyInstance<any, any, any, any
               usuarioLogin: usuario.usuario,
               usuarioNombre: usuario.nombre,
               modulo: "AUTH",
-              accion: "logout",
+              accion: request.body.motivo === "INACTIVIDAD" ? "sesion_expirada" : "logout_explicito",
               ip: request.ip,
             });
           }

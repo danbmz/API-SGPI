@@ -19,6 +19,13 @@ export const loginResponseSchema = Type.Object({
 
 export type LoginResponse = Static<typeof loginResponseSchema>;
 
+export const logoutBodySchema = Type.Object({
+  motivo: Type.Optional(Type.Union([
+    Type.Literal("EXPLICITO"),
+    Type.Literal("INACTIVIDAD"),
+  ])),
+});
+
 // ---------- Respuestas de error genéricas ----------
 
 export const errorResponseSchema = Type.Object({

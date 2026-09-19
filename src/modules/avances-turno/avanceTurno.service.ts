@@ -154,20 +154,12 @@ export async function listarAvancesTurno(actor: AuthUser, query: ListarAvancesTu
     orderBy: { createdAt: "desc" },
   });
 
-  avances.forEach((a) => {
-    console.log(`Avance ${a.id}: materialKG =`, a.materialKG, typeof a.materialKG);
-  });
-
   const resultado = await Promise.all(
     avances.map(async (avance) => {
       const totalPiezas = await calcularPiezasProducidas(avance.ordenId);
       return serializar(avance, totalPiezas);
     })
   );
-
-  resultado.forEach((r) => {
-    console.log(`Avance ${r.id}: materialKG serializado =`, r.materialKG, typeof r.materialKG);
-  });
 
   return resultado;
 }
