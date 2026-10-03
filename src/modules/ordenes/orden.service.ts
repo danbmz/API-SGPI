@@ -64,6 +64,7 @@ function serializar(orden: any, piezasProducidas: number) {
       ? orden.materialConfirmadoEn.toISOString()
       : null,
     usuarioCreadorNombre: orden.usuarioCreador.nombre,
+    materialPigmentadoUsadoKg: orden.materialPigmentadoUsadoKg !== null ? Number(orden.materialPigmentadoUsadoKg) : null,
     createdAt: orden.createdAt.toISOString(),
   };
 }

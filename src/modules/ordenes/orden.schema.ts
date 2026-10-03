@@ -112,6 +112,7 @@ export const ordenResponseSchema = Type.Object({
   materialSiguienteConfirmado: Type.Boolean(),
   materialConfirmadoEn: Type.Union([Type.String(), Type.Null()]),
   usuarioCreadorNombre: Type.String(),
+  materialPigmentadoUsadoKg: Type.Union([Type.Number(), Type.Null()]),
   createdAt: Type.String(),
 });
 

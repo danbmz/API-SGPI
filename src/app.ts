@@ -23,6 +23,7 @@ import moliendaRoutes from "./modules/moliendas/molienda.routes.js";
 import auditoriaRoutes from "./modules/auditoria/auditoria.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 import reportesRoutes from "./modules/reportes/reportes.routes.js";
+import fastifyRateLimit from "@fastify/rate-limit";
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -31,6 +32,11 @@ export function buildApp() {
   app.register(cookiePlugin);
   app.register(jwtPlugin);
   app.register(errorHandlerPlugin);
+
+  app.register(fastifyRateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+  });
 
   app.register(authenticatePlugin);
   app.register(authRoutes);

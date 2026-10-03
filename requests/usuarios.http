@@ -9,6 +9,14 @@ Content-Type: application/json
   "password": "admin123"
 }
 
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin01",
+  "password": "contraseña-incorrecta-a-proposito"
+}
+
 ### Login como supervisor (usuario sin permisos de admin)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json

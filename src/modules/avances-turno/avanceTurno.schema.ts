@@ -174,6 +174,7 @@ export const avanceTurnoResponseSchema = Type.Object({
   tipoMaterialSobrante: Type.Union([Type.Literal("VIRGEN"), Type.Literal("MOLIDO"), Type.Null()]),
   sobranteConfirmado: Type.Boolean(),
   confirmacionMolinoConfirmado: Type.Union([Type.Boolean(), Type.Null()]),
+  confirmacionMolinoHayDiferencia: Type.Union([Type.Boolean(), Type.Null()]),
   observaciones: Type.Union([Type.String(), Type.Null()]),
 });
 

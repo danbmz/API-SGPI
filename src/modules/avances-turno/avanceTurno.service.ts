@@ -67,6 +67,7 @@ function serializar(avance: any, ordenPiezasProducidas: number) {
     tipoMaterialSobrante: avance.tipoMaterialSobrante !== null ? avance.tipoMaterialSobrante : null,
     sobranteConfirmado: avance.sobranteConfirmado,
     confirmacionMolinoConfirmado: avance.confirmacionMolinoConfirmado,
+    confirmacionMolinoHayDiferencia: avance.confirmacionMolinoHayDiferencia !== null ? avance.confirmacionMolinoHayDiferencia : null,
     observaciones: avance.observaciones,
   };
 }
