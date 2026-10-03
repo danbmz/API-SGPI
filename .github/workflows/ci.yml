@@ -27,6 +27,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+      DATABASE_SSL: "false"
       FRONTEND_URL: http://localhost:5173
       JWT_SECRET: secreto-de-ci-cualquier-cosa-larga-123456
       COOKIE_SECRET: otro-secreto-de-ci-diferente-789012
