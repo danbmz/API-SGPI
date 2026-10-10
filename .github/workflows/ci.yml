@@ -39,7 +39,7 @@ jobs:
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Instalar dependencias
@@ -47,6 +47,9 @@ jobs:
 
       - name: Generar el cliente de Prisma
         run: npx prisma generate
+
+      - name: Compilar (verifica tipos)
+        run: npm run build
 
       - name: Aplicar migraciones a la base de pruebas
         run: npx prisma migrate deploy

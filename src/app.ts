@@ -26,7 +26,9 @@ import reportesRoutes from "./modules/reportes/reportes.routes.js";
 import fastifyRateLimit from "@fastify/rate-limit";
 
 export function buildApp() {
-  const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
+  const app = Fastify({ logger: true, trustProxy: true }).withTypeProvider<TypeBoxTypeProvider>();
+
+  app.get("/health", async () => ({ status: "ok" })); // UptimeRobot endpoint.
 
   app.register(corsPlugin);
   app.register(cookiePlugin);
