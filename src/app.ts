@@ -24,11 +24,19 @@ import auditoriaRoutes from "./modules/auditoria/auditoria.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 import reportesRoutes from "./modules/reportes/reportes.routes.js";
 import fastifyRateLimit from "@fastify/rate-limit";
+import { prisma } from "./lib/prisma.js";
 
 export function buildApp() {
   const app = Fastify({ logger: true, trustProxy: true }).withTypeProvider<TypeBoxTypeProvider>();
 
-  app.get("/health", async () => ({ status: "ok" })); // UptimeRobot endpoint.
+  // 1. Ninguna respuesta de la API se guarda en cachés intermedias
+  app.addHook("onSend", async (_request, reply, payload) => {
+    reply.header("Cache-Control", "no-store");
+    return payload;
+  });
+
+  // 2. Chequeo liviano: solo para revisar status de la API
+  app.get("/health", async () => ({ status: "ok" }));
 
   app.register(corsPlugin);
   app.register(cookiePlugin);
@@ -38,6 +46,14 @@ export function buildApp() {
   app.register(fastifyRateLimit, {
     max: 100,
     timeWindow: "1 minute",
+  });
+
+  // 3. Chequeo con base de datos: DESPUÉS del rate limit
+  app.register(async (instance) => {
+    instance.get("/health/db", async () => {
+      await prisma.$queryRaw`SELECT 1`;
+      return { status: "ok" };
+    });
   });
 
   app.register(authenticatePlugin);

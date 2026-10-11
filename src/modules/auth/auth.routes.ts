@@ -17,7 +17,7 @@ const esProduccion = process.env.NODE_ENV === "production";
 const COOKIE_OPTIONS_BASE = {
   httpOnly: true,
   secure: esProduccion,       // true en producción (HTTPS), false en desarrollo local (HTTP)
-  sameSite: esProduccion ? ("none" as const) : ("lax" as const),
+  sameSite: "lax" as const,   // configuramos Vercel para reescribir la ruta de la API y que front y api cuenten como el mismo sitio
   path: "/",
 };
 
