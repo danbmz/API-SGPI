@@ -38,6 +38,11 @@ export function buildApp() {
   // 2. Chequeo liviano: solo para revisar status de la API
   app.get("/health", async () => ({ status: "ok" }));
 
+  app.get("/debug-ip", async (request) => ({
+    ip: request.ip,
+    xff: request.headers["x-forwarded-for"],
+  }));
+
   app.register(corsPlugin);
   app.register(cookiePlugin);
   app.register(jwtPlugin);
