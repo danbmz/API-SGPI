@@ -7,7 +7,7 @@
 
 REST API for an inventory and production management system for a plastic plant. It covers production orders, shift reports, raw material / pigment / ground-material inventory, a regrinding workflow, audit logging, a dashboard and exportable reports, with five role-based profiles.
 
-**Live demo:** [Web app](https://sistema-gestion-produccion.vercel.app/) · [Status page](https://stats.uptimerobot.com/XJH1CFhTF5) · [Frontend repository](https://github.com/danbmz/Fronted-SGPI)
+**Live demo:** [Web app](https://sistema-gestion-produccion.vercel.app/) · [Status page](https://stats.uptimerobot.com/XJH1CFhTF5) · [Frontend repository](https://github.com/danbmz/Frontend-SGPI)
 Hosted on free tiers: the first request after a quiet period can be slow.
 
 **Demo accounts** (demo data only): `admin01`, `programador01`, `supervisor01`, `pigmentos01`, `molino01` — all use the password `Test1234!`.
@@ -35,14 +35,14 @@ API REST de un sistema de control de inventario y producción para una planta de
 
 Esta API y el diseño de las tablas se hicieron a partir de los procesos reales de una fábrica de plásticos: desde que se programa un pedido y se genera su orden de producción, pasando por el reporte de avance de cada turno (piezas, merma, plasta, sobrantes y paros), hasta el manejo del material pigmentado, la molienda del material recuperado y la salida del producto terminado. Los roles del sistema (programador, supervisor, pigmentos, molino y administrador) corresponden a los puestos que intervienen en ese flujo. Los datos del demo son ficticios.
 
-Este repositorio contiene el **backend**. El frontend está en [este repositorio](https://github.com/danbmz/Fronted-SGPI).
+Este repositorio contiene el **backend**. El frontend está en [este repositorio](https://github.com/danbmz/Frontend-SGPI).
 
 ## 2. Demo en vivo
 
 | | |
 |---|---|
-| Aplicación web | [URL-DEL-DEMO](https://sistema-gestion-produccion.vercel.app/) |
-| Estado del servicio | [URL-PAGINA-DE-ESTADO](https://stats.uptimerobot.com/XJH1CFhTF5) |
+| Aplicación web | [sistema-gestion-produccion.vercel.app](https://sistema-gestion-produccion.vercel.app/) |
+| Estado del servicio | [Página de estado](https://stats.uptimerobot.com/XJH1CFhTF5) |
 
 **Usuarios de prueba.** Todos usan la contraseña `Test1234!`:
 
@@ -175,8 +175,6 @@ Genera los secretos con `openssl rand -hex 32`, distintos en cada entorno.
 
 ## 9. Estructura del proyecto
 
-<!-- TODO: compara este árbol con tu estructura real y corrígelo. -->
-
 ```
 .
 ├── .github/workflows/ci.yml   # integración continua
@@ -208,6 +206,6 @@ Genera los secretos con `openssl rand -hex 32`, distintos en cada entorno.
 
 ## 11. Autor
 
-**Daniel Bermudez** — [LinkedIn](https://www.linkedin.com/in/dev-daniel-bermudez/) · [Correo](danbmz007@gmail.com)
+**Daniel Bermudez** — [LinkedIn](https://www.linkedin.com/in/dev-daniel-bermudez/) · [Correo](mailto:danbmz007@gmail.com)
 
 Este proyecto se distribuye bajo la [licencia MIT](LICENSE).
